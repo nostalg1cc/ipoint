@@ -66,7 +66,13 @@
     #mapbg{position:fixed; inset:0; z-index:0; opacity:0.85; pointer-events:none; filter:var(--map-filter); transition: transform 0.3s ease-out, filter 0.3s ease;} 
     #shade{position:fixed; inset:0; z-index:1; background: var(--shade-bg); pointer-events:none; transition: background 0.3s ease;}
 
-    main{position:relative; z-index:2; max-width:1100px;margin:20px auto;padding:16px 16px;display:grid;gap:16px}
+    main{position:relative; z-index:2; max-width:1100px;margin:20px auto;padding:16px;display:grid;gap:16px}
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+      main{margin:10px auto;padding:12px;gap:12px}
+      body{font-size:13px}
+    }
 
     /* Glass cards + gradient border */
     .card{position:relative;overflow:hidden;background:var(--card-bg);border-radius:20px;padding:0px;backdrop-filter:blur(8px) saturate(120%);z-index:0;transition:background 0.3s ease}
@@ -75,18 +81,54 @@
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
 
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:10px;gap:10px}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);margin:10px;gap:10px}
+    
+    /* Mobile responsive grid - always 2 columns on mobile */
+    @media (max-width: 768px) {
+      .grid{grid-template-columns:repeat(2,1fr);margin:8px;gap:8px}
+    }
+
     .kv{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:10px;border-radius:10px;background:var(--kv-bg);transition:background 0.3s ease}
     .kv::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:var(--kv-border);
       -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
     .kv:has(#miniMap) { padding: 0; }
+    
+    /* Mobile responsive kv */
+    @media (max-width: 768px) {
+      .kv{padding:8px}
+    }
+
     .k{color:var(--muted);font-size:12px;margin-bottom:6px;transition:color 0.3s ease}
-    .v{font-weight:600;word-break:break-word;transition:color 0.3s ease}
+    .v{font-weight:600;word-break:break-word;transition:color 0.3s ease;
+       /* Text truncation for single paragraph */
+       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    
+    /* Mobile responsive text */
+    @media (max-width: 768px) {
+      .k{font-size:11px;margin-bottom:4px}
+      .v{font-size:13px}
+    }
+
     .row{display:flex;align-items:center;padding:10px;gap:10px;flex-wrap:wrap}
+    
+    /* Mobile responsive row */
+    @media (max-width: 768px) {
+      .row{padding:8px;gap:8px;flex-direction:column;align-items:flex-start}
+      .row:first-child{flex-direction:row;align-items:center}
+    }
+
     .flag{display:inline-flex;width:28px;height:20px;border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px #00000020}
-    .badge{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease}
+    
+    /* Mobile responsive flag */
+    @media (max-width: 768px) {
+      .flag{width:24px;height:18px}
+    }
+
+    .badge{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease;
+           /* Text truncation for badges */
+           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
     .badge.good{border-color:#1b7b59;background:#1b7b5918;color:#87f1c7}
     .badge.warn{border-color:#7b5a1b;background:#7b5a1b18;color:#ffdca3}
     .badge.bad{border-color:#7b1b1b;background:#7b1b1b18;color:#ffbdbd}
@@ -98,6 +140,11 @@
     [data-theme="light"] .badge.bad{border-color:#e53e3e;background:#e53e3e20;color:#c53030}
     [data-theme="light"] .badge.neutral{border-color:#a0aec0;background:#cbd5e140;color:#4a5568}
     [data-theme="light"] .badge.security{border-color:#e53e3e;background:#fed7d740;color:#c53030;animation:pulse-security 2s infinite}
+
+    /* Mobile responsive badge */
+    @media (max-width: 768px) {
+      .badge{font-size:11px;padding:3px 6px;max-width:100px}
+    }
 
     /* Theme toggle button */
     .theme-toggle {
@@ -120,24 +167,63 @@
       background: var(--button-hover);
     }
 
+    /* Mobile responsive theme toggle */
+    @media (max-width: 768px) {
+      .theme-toggle{font-size:11px;padding:5px 6px;min-width:50px}
+    }
+
     @keyframes pulse-security {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
     }
 
     table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:2px solid var(--table-border);text-align:left;vertical-align:top;transition:border-color 0.3s ease}
+    th,td{padding:10px;border-bottom:2px solid var(--table-border);text-align:left;vertical-align:top;transition:border-color 0.3s ease;
+          /* Text truncation for table cells */
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+    
+    /* Mobile responsive table */
+    @media (max-width: 768px) {
+      th,td{padding:6px 4px;font-size:11px;max-width:80px}
+      table{font-size:11px}
+    }
+    
+    @media (max-width: 480px) {
+      th,td{padding:4px 2px;max-width:60px}
+      /* Hide some columns on very small screens */
+      th:nth-child(4), td:nth-child(4),
+      th:nth-child(6), td:nth-child(6) {display:none}
+    }
+
     /* hide the bottom border on the final row */
     tbody tr:last-child td{ border-bottom: 0; }
     #histBody td {padding:20px;}
 
+    /* Mobile responsive history body */
+    @media (max-width: 768px) {
+      #histBody td{padding:8px 4px}
+    }
+
     #histTable th, #histTable td {text-align:center;}
     #histHead th {text-align:center;padding:14px;}
+    
+    /* Mobile responsive history head */
+    @media (max-width: 768px) {
+      #histHead th{padding:8px 4px}
+    }
+
     th{color:var(--muted);font-weight:600;user-select:none;transition:color 0.3s ease}
     th[data-key]{cursor:pointer}
     tbody tr:hover{background:var(--hover-bg)}
 
-    .hint{color:var(--muted);font-size:12px;transition:color 0.3s ease}
+    .hint{color:var(--muted);font-size:12px;transition:color 0.3s ease;
+          /* Text truncation for hints */
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* Mobile responsive hint */
+    @media (max-width: 768px) {
+      .hint{font-size:11px}
+    }
 
     /* highlight entire entry if any field changed */
     tbody tr.entry-changed{background:var(--changed-bg);}
@@ -147,20 +233,72 @@
     tbody tr.security-alert{background:var(--security-bg);}
     tbody tr.security-alert:hover{background:var(--security-hover);}
 
-    .pill{display:inline-block;min-width:86px;text-align:center;border-radius:999px;padding:2px 8px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease}
+    .pill{display:inline-block;min-width:86px;text-align:center;border-radius:999px;padding:2px 8px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease;
+          /* Text truncation for pills */
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+
+    /* Mobile responsive pill */
+    @media (max-width: 768px) {
+      .pill{min-width:60px;padding:2px 6px;font-size:11px;max-width:80px}
+    }
 
     /* Mini map in the card */
     #miniMap{height:160px;border-radius:10px;overflow:hidden;outline:0px solid var(--line);background:var(--bg);transition:background 0.3s ease}
     @media (min-width: 900px){ #miniMap{height:200px;} }
+    
+    /* Mobile responsive mini map */
+    @media (max-width: 768px) {
+      #miniMap{height:120px}
+    }
+    
+    @media (max-width: 480px) {
+      #miniMap{height:100px}
+    }
 
     /* small style for IPv6 line under IPv4 */
     .ip-multi { display:flex; flex-direction:column; gap:4px; }
-    .ip-multi small { color: var(--muted); font-weight:500; transition:color 0.3s ease }
+    .ip-multi small { color: var(--muted); font-weight:500; transition:color 0.3s ease;
+                      /* Text truncation for IPv6 */
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
 
     #moreBtn{margin:12px 0 28px; margin: 0 44%;width:auto; padding:10px 12px; border-radius:10px; background:var(--button-bg); color:var(--text); border:1px solid var(--line); cursor:pointer;transition:all 0.3s ease}
     #moreBtn:hover{background:var(--button-hover)}
+    
+    /* Mobile responsive more button */
+    @media (max-width: 768px) {
+      #moreBtn{margin:8px auto;padding:8px 10px;font-size:13px;width:auto;display:block}
+    }
+
     button{background:var(--button-bg);color:var(--text);border:1px solid var(--line);padding:8px 12px;border-radius:10px;cursor:pointer;transition:all 0.3s ease}
     button:hover{background:var(--button-hover)}
+
+    /* Mobile responsive button */
+    @media (max-width: 768px) {
+      button{padding:6px 10px;font-size:13px}
+    }
+
+    /* Version footer */
+    .version-footer{
+      text-align:center;
+      padding:20px 16px;
+      color:var(--muted);
+      font-size:11px;
+      border-top:1px solid var(--line);
+      margin-top:20px;
+      background:var(--card-bg);
+      backdrop-filter:blur(8px) saturate(120%);
+    }
+    
+    /* Mobile responsive version footer */
+    @media (max-width: 768px) {
+      .version-footer{padding:15px 12px;font-size:10px;margin-top:15px}
+    }
+
+    .version-memo{
+      margin-top:8px;
+      font-style:italic;
+      opacity:0.7;
+    }
 
   </style>
 </head>
@@ -228,6 +366,15 @@
     <button id="moreBtn" title="Load more rows">Show more</button>
   </main>
 
+  <!-- Version Footer -->
+  <div class="version-footer">
+    <div>IPoint v2.2.0 - Fixed Grid Layout (4x2 desktop, 2x4 mobile)</div>
+    <div class="version-memo">
+      <!-- AI Memo: Update version number each time edits are made. Format: v[major].[minor].[patch] -->
+      <!-- Last updated: Fixed grid layout to always show in pairs - 4 columns/2 rows on desktop, 2 columns/4 rows on mobile -->
+    </div>
+  </div>
+
 <script>
   const PRIMARY_API = 'https://ipwho.is/?lang=en';          // primary
   const FALLBACK_API = 'https://ipapi.co/json';              // fallback
@@ -247,6 +394,13 @@
 
   const $ = (id) => document.getElementById(id);
   const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
+
+  // Text truncation helper function
+  function truncateText(text, maxLength = 50) {
+    if (!text) return '—';
+    const str = String(text);
+    return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+  }
 
   // Theme management
   function initTheme() {
@@ -331,7 +485,15 @@
     });
   }
 
-  function setKV(id, val){ $(id).textContent = val ?? '—'; }
+  function setKV(id, val){ 
+    const element = $(id);
+    const truncated = truncateText(val);
+    element.textContent = truncated;
+    // Add title attribute for full text on hover
+    if (val && String(val).length > 50) {
+      element.title = val;
+    }
+  }
 
   function deviceInfo(){
     const nav = navigator || {};
@@ -373,7 +535,9 @@
     for(const [label, type] of changed){
       const b = document.createElement('span');
       b.className = 'badge ' + type;
-      b.textContent = `${label} ${type === 'security' ? 'TRIGGERED' : 'changed'}`;
+      const text = `${label} ${type === 'security' ? 'TRIGGERED' : 'changed'}`;
+      b.textContent = truncateText(text, 15);
+      b.title = text; // Full text on hover
       wrap.appendChild(b);
     }
     if(changed.length === 0){
@@ -472,14 +636,24 @@
       } else if (h.changed === 'Yes') {
         tr.classList.add('entry-changed');
       }
+      
+      // Truncate all table cell content
+      const dateText = fmt(new Date(h.date));
+      const ipText = h.ip || '—';
+      const countryText = h.country || '—';
+      const cityText = h.city || '—';
+      const ispText = h.isp || '—';
+      const asnText = h.asn || '—';
+      const changedText = h.changed;
+      
       tr.innerHTML = `
-        <td>${fmt(new Date(h.date))}</td>
-        <td ${h.changedFlags.ip ? 'class="changed"' : ''}>${h.ip || '—'}</td>
-        <td ${h.changedFlags.country ? 'class="changed"' : ''}>${h.country || '—'}</td>
-        <td>${h.city || '—'}</td>
-        <td ${h.changedFlags.isp ? 'class="changed"' : ''}>${h.isp || '—'}</td>
-        <td ${h.changedFlags.asn ? 'class="changed"' : ''}>${h.asn || '—'}</td>
-        <td style="${h.securityAlert ? 'color: #ef6a6a; font-weight: 600;' : ''}">${h.changed}</td>
+        <td title="${dateText}">${truncateText(dateText, 20)}</td>
+        <td ${h.changedFlags.ip ? 'class="changed"' : ''} title="${ipText}">${truncateText(ipText, 15)}</td>
+        <td ${h.changedFlags.country ? 'class="changed"' : ''} title="${countryText}">${truncateText(countryText, 15)}</td>
+        <td title="${cityText}">${truncateText(cityText, 12)}</td>
+        <td ${h.changedFlags.isp ? 'class="changed"' : ''} title="${ispText}">${truncateText(ispText, 15)}</td>
+        <td ${h.changedFlags.asn ? 'class="changed"' : ''} title="${asnText}">${truncateText(asnText, 10)}</td>
+        <td style="${h.securityAlert ? 'color: #ef6a6a; font-weight: 600;' : ''}" title="${changedText}">${truncateText(changedText, 10)}</td>
       `;
       body.appendChild(tr);
     });
@@ -789,14 +963,18 @@
         const v6res = await fetch(IPV6_URL, {cache:'no-store'});
         if (!v6res.ok) throw new Error('No IPv6');
         const v6 = await v6res.json();
+        const ipv4Text = data.ip || '—';
+        const ipv6Text = `IPv6: ${v6.ip}`;
         $('ip').innerHTML = `<div class="ip-multi">
-          <span>${data.ip || '—'}</span>
-          <small>IPv6: ${v6.ip}</small>
+          <span title="${ipv4Text}">${truncateText(ipv4Text, 20)}</span>
+          <small title="${ipv6Text}">${truncateText(ipv6Text, 25)}</small>
         </div>`;
       } catch {
+        const ipv4Text = data.ip || '—';
+        const ipv6Text = 'IPv6: Not detected';
         $('ip').innerHTML = `<div class="ip-multi">
-          <span>${data.ip || '—'}</span>
-          <small>IPv6: Not detected</small>
+          <span title="${ipv4Text}">${truncateText(ipv4Text, 20)}</span>
+          <small title="${ipv6Text}">${truncateText(ipv6Text, 25)}</small>
         </div>`;
       }
     })();
