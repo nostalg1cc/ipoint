@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IPoint</title>
+
+  <!-- Favicon updates to the current country flag -->
+  <link rel="icon" type="image/png" sizes="16x16" href="https://flagsapi.com/US/flat/16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://flagsapi.com/US/flat/32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="https://flagsapi.com/US/flat/64.png">
+
+  <!-- Flag icons (ISO country codes) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
+
+  <!-- Leaflet for maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f1115; --panel:#151923; --text:#e7e9ee; --muted:#a6afbd; --accent:#7aa2ff;
+      --good:#35c48b; --warn:#f5b64d; --bad:#ef6a6a; --line:#232a36;
+      --map-filter: grayscale(100%);
+      --card-bg: rgba(150, 161, 196, 0.062);
+      --card-border: linear-gradient(to bottom right,rgba(108,99,134,.25),rgba(108,99,134,.05));
+      --kv-bg: rgba(150, 161, 196, 0.04);
+      --kv-border: linear-gradient(to bottom right,rgba(108,99,134,.2),rgba(108,99,134,.04));
+      --table-border: rgba(108,99,134,.25);
+      --hover-bg: #ffffff05;
+      --shade-bg: radial-gradient(1200px 800px at 50% 20%, transparent 0%, rgba(15,17,21,0.35) 60%, rgba(15,17,21,0.6) 100%);
+      --badge-bg: #ffffff10;
+      --button-bg: #1a2230;
+      --button-hover: #20293a;
+      --changed-bg: linear-gradient(90deg,#ffb74a12,transparent 80%);
+      --changed-hover: linear-gradient(90deg,#ffb74a1c,transparent 80%);
+      --security-bg: linear-gradient(90deg,#dc262620,transparent 80%);
+      --security-hover: linear-gradient(90deg,#dc262630,transparent 80%);
+    }
+
+    [data-theme="light"] {
+      --bg: #f1f3f6; --panel: #fafbfc; --text: #2d3748; --muted: #718096; --accent: #4299e1;
+      --good: #38a169; --warn: #ed8936; --bad: #e53e3e; --line: #d2d6dc;
+      --map-filter: none;
+      --card-bg: rgba(250, 251, 252, 0.85);
+      --card-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.25), rgba(160, 174, 192, 0.08));
+      --kv-bg: rgba(237, 242, 247, 0.5);
+      --kv-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.2), rgba(160, 174, 192, 0.04));
+      --table-border: rgba(160, 174, 192, 0.25);
+      --hover-bg: rgba(237, 242, 247, 0.4);
+      --shade-bg: radial-gradient(1200px 800px at 50% 20%, transparent 0%, rgba(241, 243, 246, 0.25) 60%, rgba(241, 243, 246, 0.4) 100%);
+      --badge-bg: rgba(160, 174, 192, 0.08);
+      --button-bg: #edf2f7;
+      --button-hover: #e2e8f0;
+      --changed-bg: linear-gradient(90deg, rgba(237, 137, 54, 0.12), transparent 80%);
+      --changed-hover: linear-gradient(90deg, rgba(237, 137, 54, 0.2), transparent 80%);
+      --security-bg: linear-gradient(90deg, rgba(229, 62, 62, 0.12), transparent 80%);
+      --security-hover: linear-gradient(90deg, rgba(229, 62, 62, 0.2), transparent 80%);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;position:relative;transition:background-color 0.3s ease, color 0.3s ease}
+
+    /* Soft background map with parallax */
+    #mapbg{position:fixed; inset:0; z-index:0; opacity:0.85; pointer-events:none; filter:var(--map-filter); transition: transform 0.3s ease-out, filter 0.3s ease;} 
+    #shade{position:fixed; inset:0; z-index:1; background: var(--shade-bg); pointer-events:none; transition: background 0.3s ease;}
+
+    main{position:relative; z-index:2; max-width:1100px;margin:20px auto;padding:16px 16px;display:grid;gap:16px}
+
+    /* Glass cards + gradient border */
+    .card{position:relative;overflow:hidden;background:var(--card-bg);border-radius:20px;padding:0px;backdrop-filter:blur(8px) saturate(120%);z-index:0;transition:background 0.3s ease}
+    .card::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:2px;background:var(--card-border);
+      -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:10px;gap:10px}
+    .kv{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:10px;border-radius:10px;background:var(--kv-bg);transition:background 0.3s ease}
+    .kv::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:var(--kv-border);
+      -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
+    .kv:has(#miniMap) { padding: 0; }
+    .k{color:var(--muted);font-size:12px;margin-bottom:6px;transition:color 0.3s ease}
+    .v{font-weight:600;word-break:break-word;transition:color 0.3s ease}
+    .row{display:flex;align-items:center;padding:10px;gap:10px;flex-wrap:wrap}
+    .flag{display:inline-flex;width:28px;height:20px;border-radius:3px;overflow:hidden;box-shadow:0 0 0 1px #00000020}
+    .badge{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease}
+    .badge.good{border-color:#1b7b59;background:#1b7b5918;color:#87f1c7}
+    .badge.warn{border-color:#7b5a1b;background:#7b5a1b18;color:#ffdca3}
+    .badge.bad{border-color:#7b1b1b;background:#7b1b1b18;color:#ffbdbd}
+    .badge.neutral{border-color:#2a2f3b;background:#2a2f3b66;color:#c9cfdb}
+    .badge.security{border-color:#b91c1c;background:#b91c1c30;color:#fca5a5;animation:pulse-security 2s infinite}
+
+    [data-theme="light"] .badge.good{border-color:#38a169;background:#38a16920;color:#22543d}
+    [data-theme="light"] .badge.warn{border-color:#ed8936;background:#ed893620;color:#c05621}
+    [data-theme="light"] .badge.bad{border-color:#e53e3e;background:#e53e3e20;color:#c53030}
+    [data-theme="light"] .badge.neutral{border-color:#a0aec0;background:#cbd5e140;color:#4a5568}
+    [data-theme="light"] .badge.security{border-color:#e53e3e;background:#fed7d740;color:#c53030;animation:pulse-security 2s infinite}
+
+    /* Theme toggle button */
+    .theme-toggle {
+      background: var(--button-bg);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 6px 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      transition: all 0.3s ease;
+      user-select: none;
+      min-width: 60px;
+      justify-content: center;
+    }
+    
+    .theme-toggle:hover {
+      background: var(--button-hover);
+    }
+
+    @keyframes pulse-security {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:2px solid var(--table-border);text-align:left;vertical-align:top;transition:border-color 0.3s ease}
+    /* hide the bottom border on the final row */
+    tbody tr:last-child td{ border-bottom: 0; }
+    #histBody td {padding:20px;}
+
+    #histTable th, #histTable td {text-align:center;}
+    #histHead th {text-align:center;padding:14px;}
+    th{color:var(--muted);font-weight:600;user-select:none;transition:color 0.3s ease}
+    th[data-key]{cursor:pointer}
+    tbody tr:hover{background:var(--hover-bg)}
+
+    .hint{color:var(--muted);font-size:12px;transition:color 0.3s ease}
+
+    /* highlight entire entry if any field changed */
+    tbody tr.entry-changed{background:var(--changed-bg);}
+    tbody tr.entry-changed:hover{background:var(--changed-hover);}
+
+    /* Security alert styling */
+    tbody tr.security-alert{background:var(--security-bg);}
+    tbody tr.security-alert:hover{background:var(--security-hover);}
+
+    .pill{display:inline-block;min-width:86px;text-align:center;border-radius:999px;padding:2px 8px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease}
+
+    /* Mini map in the card */
+    #miniMap{height:160px;border-radius:10px;overflow:hidden;outline:0px solid var(--line);background:var(--bg);transition:background 0.3s ease}
+    @media (min-width: 900px){ #miniMap{height:200px;} }
+
+    /* small style for IPv6 line under IPv4 */
+    .ip-multi { display:flex; flex-direction:column; gap:4px; }
+    .ip-multi small { color: var(--muted); font-weight:500; transition:color 0.3s ease }
+
+    #moreBtn{margin:12px 0 28px; margin: 0 44%;width:auto; padding:10px 12px; border-radius:10px; background:var(--button-bg); color:var(--text); border:1px solid var(--line); cursor:pointer;transition:all 0.3s ease}
+    #moreBtn:hover{background:var(--button-hover)}
+    button{background:var(--button-bg);color:var(--text);border:1px solid var(--line);padding:8px 12px;border-radius:10px;cursor:pointer;transition:all 0.3s ease}
+    button:hover{background:var(--button-hover)}
+
+  </style>
+</head>
+<body>
+  <div id="mapbg"></div>
+  <div id="shade"></div>
+
+  <main>
+
+    <section class="card" id="live">
+      <div class="row" style="justify-content:space-between">
+        <div class="row">
+          <span id="flag" class="flag"></span>
+          <div>
+            <div id="greeting" style="font-weight:700;font-size:16px">Loading…</div>
+            <div id="greetSub" class="hint"></div>
+          </div>
+        </div>
+        <div class="row" id="changeBadges" style="gap:6px">
+          <div class="theme-toggle" onclick="toggleTheme()">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">Dark</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-top:-2px">
+        <div class="kv"><div class="k">Country</div><div class="v" id="country">—</div></div>
+        <div class="kv"><div class="k">Region / City</div><div class="v" id="place">—</div></div>
+        <div class="kv"><div class="k">ISP</div><div class="v" id="isp">—</div></div>
+        <div class="kv"><div class="k">ASN</div><div class="v" id="asn">—</div></div>
+        <div class="kv"><div class="k">IP Address</div><div class="v" id="ip">—</div></div>
+        <div class="kv"><div class="k">Timezone</div><div class="v" id="tz">—</div></div>
+        <div class="kv"><div class="k">User Agent</div><div class="v" id="ua">—</div></div>
+
+        <!-- mini map stays as-is -->
+        <div class="kv">
+          <div id="miniMap"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+        
+      </div>
+      <div style="overflow:auto">
+        <table id="histTable">
+          <thead>
+            <tr id="histHead">
+              <th data-key="date" data-label="Date & Time">Date</th>
+              <th data-key="ip" data-label="IP">IP</th>
+              <th data-key="country" data-label="Country">Country</th>
+              <th data-key="city" data-label="City">City</th>
+              <th data-key="isp" data-label="ISP">ISP</th>
+              <th data-key="asn" data-label="ASN">ASN</th>
+              <th data-key="changed" data-label="Changed">Changed</th>
+            </tr>
+          </thead>
+          <tbody id="histBody">
+            <tr><td colspan="8" class="hint">No entries yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <button id="moreBtn" title="Load more rows">Show more</button>
+  </main>
+
+<script>
+  const PRIMARY_API = 'https://ipwho.is/?lang=en';          // primary
+  const FALLBACK_API = 'https://ipapi.co/json';              // fallback
+  const IPV6_URL = 'https://api6.ipify.org?format=json';     // IPv6 check
+  const KEY = 'ip_visit_history_v1';
+  const THEME_KEY = 'ip_theme_preference';
+  const MAX_HISTORY_STORE = 500;   // keep latest 500 entries
+  const HIST_PAGE_SIZE    = 20;    // rows per "page"
+  let   histVisible       = HIST_PAGE_SIZE;
+  let   SORT = { key: 'date', dir: 'desc' };
+
+  // Kill-switch variables
+  let killSwitchActive = false;
+  let currentSessionIP = null;
+  let killSwitchInterval = null;
+  const KILL_SWITCH_INTERVAL = 5000; // 5 seconds
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
+
+  // Theme management
+  function initTheme() {
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+    setTheme(theme);
+  }
+
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+    updateThemeToggle(theme);
+    
+    // Update map tiles based on theme
+    if (mapBg) {
+      const tileLayer = theme === 'light' 
+        ? 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png'
+        : 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      mapBg.eachLayer(layer => {
+        if (layer._url) {
+          layer.setUrl(tileLayer);
+        }
+      });
+    }
+    
+    if (mini) {
+      const tileLayer = theme === 'light' 
+        ? 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png'
+        : 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      mini.eachLayer(layer => {
+        if (layer._url) {
+          layer.setUrl(tileLayer);
+        }
+      });
+    }
+  }
+
+  function updateThemeToggle(theme) {
+    const icon = $('themeIcon');
+    const text = $('themeText');
+    if (theme === 'light') {
+      icon.textContent = '🌙';
+      text.textContent = 'Dark';
+    } else {
+      icon.textContent = '☀️';
+      text.textContent = 'Light';
+    }
+  }
+
+  function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+  }
+
+  function getHistory(){ try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } }
+  function setHistory(arr){ localStorage.setItem(KEY, JSON.stringify(arr)); }
+
+  function renderFlag(cc){
+    const el = $('flag'); el.innerHTML = '';
+    if(!cc) return;
+    const span = document.createElement('span');
+    span.className = 'fi fi-' + cc.toLowerCase();
+    span.style.width = '28px'; span.style.height='20px';
+    el.appendChild(span);
+  }
+
+  function setFavicon(cc) {
+    if (!cc) return;
+    const base = cc.toUpperCase();
+    [16,32,64].forEach(size => {
+      let link = document.querySelector(`link[rel="icon"][sizes="${size}x${size}"]`);
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        link.type = 'image/png';
+        link.sizes = `${size}x${size}`;
+        document.head.appendChild(link);
+      }
+      link.href = `https://flagsapi.com/${base}/flat/${size}.png`;
+    });
+  }
+
+  function setKV(id, val){ $(id).textContent = val ?? '—'; }
+
+  function deviceInfo(){
+    const nav = navigator || {};
+    const concurrency = nav.hardwareConcurrency ? `${nav.hardwareConcurrency} threads` : 'n/a';
+    const mem = nav.deviceMemory ? `${nav.deviceMemory} GB` : 'n/a';
+    const plat = nav.platform || 'n/a';
+    return { ua: nav.userAgent || 'n/a', device: `${plat} • ${concurrency} • ${mem}` };
+  }
+
+  const VPN_KEYWORDS = ['vpn','mullvad','nord','express','pia','private internet access','surfshark','proton','hidemyass','hma','tunnelbear','windscribe','cyberghost','ivpn','perfect privacy','airvpn','vypr','hotspot shield','privatevpn','strongvpn','purevpn','hola vpn','colo','colocation','datacenter','datacentre','digitalocean','ovh','hetzner','leaseweb','vultr','linode','scaleway','contabo','aws','amazon','gcp','google cloud','azure'];
+  function looksLikeVPN(connection){
+    const hay = [connection?.isp, connection?.org, connection?.domain].filter(Boolean).join(' ').toLowerCase();
+    return VPN_KEYWORDS.some(k => hay.includes(k));
+  }
+
+  function diffBadges(prev, curr, isSecurityAlert = false){
+    const wrap = $('changeBadges'); 
+    
+    // Keep the theme toggle
+    const themeToggle = wrap.querySelector('.theme-toggle');
+    wrap.innerHTML = '';
+    if (themeToggle) {
+      wrap.appendChild(themeToggle);
+    }
+    
+    if(!prev) return;
+    
+    const changed = [];
+    if(prev.ip !== curr.ip) changed.push(['IP', 'bad']);
+    if(prev.country_code !== curr.country_code) changed.push(['Country', 'warn']);
+    if(prev.connection?.isp !== curr.connection?.isp) changed.push(['ISP', 'warn']);
+    if(prev.connection?.asn !== curr.connection?.asn) changed.push(['ASN', 'warn']);
+    
+    // Add kill-switch badge if it's a security alert
+    if (isSecurityAlert) {
+      changed.unshift(['🚨 KILL-SWITCH', 'security']);
+    }
+    
+    for(const [label, type] of changed){
+      const b = document.createElement('span');
+      b.className = 'badge ' + type;
+      b.textContent = `${label} ${type === 'security' ? 'TRIGGERED' : 'changed'}`;
+      wrap.appendChild(b);
+    }
+    if(changed.length === 0){
+      const b = document.createElement('span'); 
+      b.className = 'badge good'; 
+      b.textContent = 'No changes'; 
+      wrap.appendChild(b);
+    }
+  }
+
+  function appendHistory(entry){
+    const hist = getHistory();
+    hist.push(entry);
+    if (hist.length > MAX_HISTORY_STORE) hist.splice(0, hist.length - MAX_HISTORY_STORE);
+    setHistory(hist);
+  }
+
+  function setSort(key){
+    if (SORT.key === key){ SORT.dir = SORT.dir === 'asc' ? 'desc' : 'asc'; }
+    else { SORT.key = key; SORT.dir = (key === 'date') ? 'desc' : 'asc'; }
+    histVisible = HIST_PAGE_SIZE;   // show first page again after resort
+    renderHistory();
+  }
+
+  function renderSortIndicators(){
+    const head = document.getElementById('histHead');
+    [...head.querySelectorAll('th[data-key]')].forEach(th => {
+      const key = th.getAttribute('data-key');
+      const label = th.getAttribute('data-label') || th.textContent.replace(/[▲▼]\s*$/,'');
+      const isActive = key === SORT.key;
+      const arrow = isActive ? (SORT.dir === 'asc' ? ' ↑' : ' ↓') : '';
+      th.textContent = label + arrow;
+    });
+  }
+
+  function renderHistory(reset=false){
+    if (reset) histVisible = HIST_PAGE_SIZE;
+
+    const body = $('histBody');
+    const hist = getHistory();
+    body.innerHTML = '';
+
+    if(hist.length === 0){
+      const tr = document.createElement('tr'); const td = document.createElement('td');
+      td.colSpan = 8; td.className = 'hint'; td.textContent = 'No entries yet.';
+      tr.appendChild(td); body.appendChild(tr); renderSortIndicators();
+      const moreBtn = $('moreBtn'); if (moreBtn) moreBtn.style.display = 'none';
+      return;
+    }
+
+    // Compute changed flags in chronological order
+    let last = null;
+    const enriched = hist.map(h => {
+      const changed = {
+        ip: !!(last && last.ip !== h.ip),
+        country: !!(last && last.country_code !== h.country_code),
+        isp: !!(last && (last.connection?.isp || '') !== (h.connection?.isp || '')),
+        asn: !!(last && (last.connection?.asn || '') !== (h.connection?.asn || ''))
+      };
+      const anyChanged = Object.values(changed).some(Boolean); 
+      const isSecurityAlert = h.securityAlert || false;
+      last = h;
+      return {
+        date: h.timestamp, ip: h.ip || '',
+        country: (h.country || '') + (h.country_code ? ` (${h.country_code})` : ''),
+        city: h.city || '', isp: (h.connection && h.connection.isp) || '',
+        asn: (h.connection && h.connection.asn) || '', 
+        changed: isSecurityAlert ? 'SECURITY ALERT' : (anyChanged ? 'Yes' : 'No'),
+        changedFlags: changed,
+        securityAlert: isSecurityAlert
+      };
+    });
+
+    // Sort for display
+    const rows = enriched.slice(); const dir = (SORT.dir === 'asc') ? 1 : -1;
+    rows.sort((a,b) => {
+      const key = SORT.key; let va = a[key], vb = b[key];
+      if (key === 'date') return (a.date - b.date) * dir;
+      if (key === 'asn'){
+        const na = parseInt(String(a.asn).replace(/[^\d]/g,''),10);
+        const nb = parseInt(String(b.asn).replace(/[^\d]/g,''),10);
+        if (Number.isFinite(na) && Number.isFinite(nb)) return (na === nb ? 0 : (na < nb ? -1 : 1)) * dir;
+      }
+      va = (va ?? '').toString(); vb = (vb ?? '').toString();
+      return va.localeCompare(vb, undefined, { numeric:true, sensitivity:'base' }) * dir;
+    });
+
+    // Slice to visible window
+    const total = rows.length;
+    const visibleRows = rows.slice(0, Math.min(histVisible, total));
+
+    visibleRows.forEach(h => {
+      const tr = document.createElement('tr');
+      if (h.securityAlert) {
+        tr.classList.add('security-alert');
+      } else if (h.changed === 'Yes') {
+        tr.classList.add('entry-changed');
+      }
+      tr.innerHTML = `
+        <td>${fmt(new Date(h.date))}</td>
+        <td ${h.changedFlags.ip ? 'class="changed"' : ''}>${h.ip || '—'}</td>
+        <td ${h.changedFlags.country ? 'class="changed"' : ''}>${h.country || '—'}</td>
+        <td>${h.city || '—'}</td>
+        <td ${h.changedFlags.isp ? 'class="changed"' : ''}>${h.isp || '—'}</td>
+        <td ${h.changedFlags.asn ? 'class="changed"' : ''}>${h.asn || '—'}</td>
+        <td style="${h.securityAlert ? 'color: #ef6a6a; font-weight: 600;' : ''}">${h.changed}</td>
+      `;
+      body.appendChild(tr);
+    });
+
+    renderSortIndicators();
+
+    // Update Show more button
+    const moreBtn = $('moreBtn');
+    if (moreBtn){
+      const remaining = total - histVisible;
+      if (remaining > 0){
+        moreBtn.style.display = 'inline-block';
+        moreBtn.textContent = `Show more (${Math.min(HIST_PAGE_SIZE, remaining)})`;
+      } else {
+        moreBtn.style.display = 'none';
+      }
+    }
+  }
+
+  $('moreBtn')?.addEventListener('click', () => {
+    histVisible += HIST_PAGE_SIZE;
+    renderHistory();
+  });
+
+  // Background map
+  let mapBg;
+  function initMapBg(lat, lon){
+    try{
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const tileLayer = currentTheme === 'light' 
+        ? 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png'
+        : 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      mapBg = L.map('mapbg',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,tap:false,touchZoom:false});
+      L.tileLayer(tileLayer,{maxZoom:18,minZoom:2}).addTo(mapBg);
+      mapBg.setView([lat,lon],14);
+      L.circleMarker([lat,lon],{radius:6,color:'#ffffff55',fillColor:'#ffffffaa',fillOpacity:0.6,weight:1}).addTo(mapBg);
+    }catch(_){/* noop */}
+  }
+
+  // Mini map
+  let mini;
+  function initMiniMap(lat, lon){
+    try{
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const tileLayer = currentTheme === 'light' 
+        ? 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png'
+        : 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      mini = L.map('miniMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,tap:false,touchZoom:false});
+      L.tileLayer(tileLayer,{maxZoom:19,minZoom:2}).addTo(mini);
+      mini.setView([lat,lon],16); // ultra zoom
+      L.circleMarker([lat,lon],{radius:5,color:'#ffffff80',fillColor:'#ffffffcc',fillOpacity:0.85,weight:1}).addTo(mini);
+      setTimeout(()=>mini.invalidateSize(), 0);
+    }catch(_){/* noop */}
+  }
+
+  /* =========================
+     Greeting helpers (language + daypart)
+     ========================= */
+  const CC_TO_LANG = {
+    US:'en', GB:'en', CA:'en', AU:'en', NZ:'en', IE:'en', SG:'en',
+    DE:'de', AT:'de', CH:'de',
+    FR:'fr', BE:'fr', LU:'fr',
+    IT:'it', ES:'es', PT:'pt', BR:'pt', NL:'nl',
+    SE:'sv', NO:'no', DK:'da', FI:'fi',
+    PL:'pl', CZ:'cs', RO:'ro', HU:'hu',
+    RU:'ru', UA:'uk', TR:'tr',
+    JP:'ja', KR:'ko', CN:'zh', TW:'zh', HK:'zh',
+    AE:'ar', SA:'ar', EG:'ar', MA:'ar',
+    IN:'hi', ID:'id', TH:'th', VN:'vi'
+  };
+
+  const GREETINGS = {
+    en:{morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening', night:'Good night'},
+    de:{morning:'Guten Morgen', afternoon:'Guten Tag', evening:'Guten Abend', night:'Gute Nacht'},
+    fr:{morning:'Bonjour', afternoon:'Bonjour', evening:'Bonsoir', night:'Bonne nuit'},
+    it:{morning:'Buongiorno', afternoon:'Buon pomeriggio', evening:'Buonasera', night:'Buonanotte'},
+    es:{morning:'Buenos días', afternoon:'Buenas tardes', evening:'Buenas tardes', night:'Buenas noches'},
+    pt:{morning:'Bom dia', afternoon:'Boa tarde', evening:'Boa noite', night:'Boa noite'},
+    nl:{morning:'Goedemorgen', afternoon:'Goedemiddag', evening:'Goedenavond', night:'Goedenacht'},
+    sv:{morning:'God morgon', afternoon:'God eftermiddag', evening:'God kväll', night:'God natt'},
+    no:{morning:'God morgen', afternoon:'God ettermiddag', evening:'God kveld', night:'God natt'},
+    da:{morning:'Godmorgen', afternoon:'God eftermiddag', evening:'Godaften', night:'Godnat'},
+    fi:{morning:'Hyvää huomenta', afternoon:'Hyvää iltapäivää', evening:'Hyvää iltaa', night:'Hyvää yötä'},
+    pl:{morning:'Dzień dobry', afternoon:'Dzień dobry', evening:'Dobry wieczór', night:'Dobranoc'},
+    ru:{morning:'Доброе утро', afternoon:'Добрый день', evening:'Добрый вечер', night:'Спокойной ночи'},
+    tr:{morning:'Günaydın', afternoon:'Tünaydın', evening:'İyi akşamlar', night:'İyi geceler'},
+    ja:{morning:'おはようございます', afternoon:'こんにちは', evening:'こんばんは', night:'おやすみなさい'},
+    zh:{morning:'早上好', afternoon:'下午好', evening:'晚上好', night:'晚安'},
+    ar:{morning:'صباح الخير', afternoon:'مساء الخير', evening:'مساء الخير', night:'تصبح على خير'},
+    hi:{morning:'सुप्रभात', afternoon:'नमस्ते', evening:'शुभ संध्या', night:'शुभ रात्रि'}
+  };
+
+  function pickLang(data){
+    let code = '';
+    const langs = data?.languages;
+    if (Array.isArray(langs) && langs.length) {
+      code = String(langs[0]).toLowerCase();
+    } else if (typeof langs === 'string') {
+      code = (langs.split(/[,; ]/).find(Boolean) || '').toLowerCase();
+    }
+    if (code.includes('-')) code = code.split('-')[0];
+    if (!GREETINGS[code]) {
+      const cc = (data?.country_code || '').toUpperCase();
+      code = CC_TO_LANG[cc] || 'en';
+    }
+    if (code === 'nb') code = 'no';
+    if (code.startsWith?.('zh')) code = 'zh';
+    return GREETINGS[code] ? code : 'en';
+  }
+
+  function safeBuildGreeting(data){
+    try {
+      const tz = data?.timezone || 'UTC';
+      const hour = Number(new Intl.DateTimeFormat('en-US', { hour:'numeric', hour12:false, timeZone: tz }).format(new Date()));
+      const part = (hour < 5) ? 'night' : (hour < 12) ? 'morning' : (hour < 18) ? 'afternoon' : 'evening';
+      const lang = pickLang(data);
+      const g = GREETINGS[lang] || GREETINGS.en;
+      return g[part] || GREETINGS.en[part];
+    } catch { return 'Hello'; }
+  }
+
+  function buildGreetSub(data){
+    try{
+      const tzId = data?.timezone || 'UTC';
+      const localTime = new Intl.DateTimeFormat(undefined,{ timeZone: tzId, hour:'2-digit', minute:'2-digit' }).format(new Date());
+      return `${localTime} • ${tzId}`;
+    }catch{ return '—'; }
+  }
+
+  // Normalizers to one consistent shape
+  function normalizeFromIpwho(d){
+    return {
+      ip: d.ip,
+      country: d.country || '',
+      country_code: d.country_code || '',
+      city: d.city || '',
+      region: d.region || '',
+      latitude: d.latitude,
+      longitude: d.longitude,
+      timezone: d?.timezone?.id || d?.timezone || '',
+      languages: d.languages,
+      connection: {
+        isp: d?.connection?.isp || d?.connection?.org || '',
+        org: d?.connection?.org || '',
+        asn: d?.connection?.asn || '',
+        domain: d?.connection?.domain || ''
+      }
+    };
+  }
+
+  function normalizeFromIpapi(d){
+    return {
+      ip: d.ip,
+      country: d.country_name || '',
+      country_code: d.country || d.country_code || '',
+      city: d.city || '',
+      region: d.region || d.region_code || '',
+      latitude: d.latitude,
+      longitude: d.longitude,
+      timezone: d.timezone || '',
+      languages: d.languages || '', // ipapi sometimes returns comma list like "en"
+      connection: {
+        isp: d.org || d.asn_org || '',
+        org: d.org || '',
+        asn: d.asn || d.asn_code || '',
+        domain: ''
+      }
+    };
+  }
+
+  // Kill-switch functions
+  async function getIpQuick() {
+    try {
+      // Use a faster IP-only endpoint for kill-switch monitoring
+      const response = await fetch('https://api.ipify.org?format=json', {cache: 'no-store'});
+      const data = await response.json();
+      return data.ip;
+    } catch {
+      // Fallback to primary endpoint
+      try {
+        const response = await fetch(PRIMARY_API, {cache: 'no-store'});
+        const data = await response.json();
+        return data.ip;
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  async function killSwitchCheck() {
+    if (!killSwitchActive || !currentSessionIP) return;
+
+    try {
+      const currentIP = await getIpQuick();
+      
+      if (!currentIP) {
+        console.warn('Kill-switch: Connection error');
+        return;
+      }
+
+      if (currentIP !== currentSessionIP) {
+        // SECURITY ALERT - IP changed during session!
+        console.warn('KILL-SWITCH TRIGGERED: IP address changed during active session!');
+        
+        // Get full IP data for the new IP
+        try {
+          const newData = await getIpData();
+          
+          // Create security alert entry
+          const securityEntry = {
+            timestamp: Date.now(),
+            ip: newData.ip,
+            country: newData.country,
+            country_code: newData.country_code,
+            city: newData.city,
+            region: newData.region,
+            connection: {
+              isp: newData.connection?.isp || null,
+              org: newData.connection?.org || null,
+              asn: newData.connection?.asn || null,
+              domain: newData.connection?.domain || null
+            },
+            timezone: newData.timezone || null,
+            securityAlert: true // Mark as security alert
+          };
+          
+          appendHistory(securityEntry);
+          
+          // Update UI with new data
+          fillUI(newData);
+          
+          // Show security alert badge with other change badges
+          const hist = getHistory();
+          const lastEntry = hist[hist.length - 2]; // Previous entry before security alert
+          diffBadges(lastEntry, newData, true);
+          
+          // Re-render history to show the security alert
+          renderHistory();
+          
+          // Update current session IP to continue monitoring
+          currentSessionIP = newData.ip;
+          
+        } catch (error) {
+          console.error('Failed to get full data for security alert:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Kill-switch check failed:', error);
+    }
+  }
+
+  function startKillSwitch(initialIP) {
+    currentSessionIP = initialIP;
+    killSwitchActive = true;
+    
+    // Start monitoring every 5 seconds
+    killSwitchInterval = setInterval(killSwitchCheck, KILL_SWITCH_INTERVAL);
+    
+    console.log('Kill-switch activated for IP:', initialIP);
+  }
+
+  function stopKillSwitch() {
+    killSwitchActive = false;
+    currentSessionIP = null;
+    
+    if (killSwitchInterval) {
+      clearInterval(killSwitchInterval);
+      killSwitchInterval = null;
+    }
+  }
+
+  async function getIpData(){
+    // Try primary
+    try{
+      const r = await fetch(PRIMARY_API, {cache:'no-store'});
+      const j = await r.json();
+      if (!j || j.success === false) throw new Error(j?.message || 'Primary failed');
+      return normalizeFromIpwho(j);
+    }catch(_){
+      // Fallback provider
+      try{
+        const r2 = await fetch(FALLBACK_API, {cache:'no-store'});
+        const j2 = await r2.json();
+        if (!j2 || j2.error) throw new Error(j2?.reason || 'Fallback failed');
+        return normalizeFromIpapi(j2);
+      }catch(e2){
+        throw e2;
+      }
+    }
+  }
+
+  function fillUI(data){
+    $('greeting').textContent = safeBuildGreeting(data);
+    $('greetSub').textContent = buildGreetSub(data);
+    renderFlag(data.country_code); setFavicon(data.country_code);
+
+    setKV('ip', data.ip || '—');
+    setKV('country', `${data.country || '—'}${data.country_code ? ` (${data.country_code})` : ''}`);
+    setKV('place', [data.region, data.city].filter(Boolean).join(' / ') || '—');
+    setKV('isp', data.connection?.isp || data.connection?.org || '—');
+    setKV('asn', data.connection?.asn || '—');
+    setKV('tz', data.timezone || '—');
+
+    // IPv6 check merged into IP card
+    (async ()=>{
+      try {
+        const v6res = await fetch(IPV6_URL, {cache:'no-store'});
+        if (!v6res.ok) throw new Error('No IPv6');
+        const v6 = await v6res.json();
+        $('ip').innerHTML = `<div class="ip-multi">
+          <span>${data.ip || '—'}</span>
+          <small>IPv6: ${v6.ip}</small>
+        </div>`;
+      } catch {
+        $('ip').innerHTML = `<div class="ip-multi">
+          <span>${data.ip || '—'}</span>
+          <small>IPv6: Not detected</small>
+        </div>`;
+      }
+    })();
+
+    if (typeof data.latitude === 'number' && typeof data.longitude === 'number'){
+      initMapBg(data.latitude, data.longitude);
+      initMiniMap(data.latitude, data.longitude);
+    }
+  }
+
+  async function init(){
+    // Initialize theme first
+    initTheme();
+    
+    const dev = deviceInfo();
+    setKV('ua', dev.ua);
+
+    // Try both providers with normalization
+    try{
+      const data = await getIpData();
+
+      // change badges vs last
+      const hist = getHistory();
+      const last = hist[hist.length - 1];
+      diffBadges(last, data);
+
+      fillUI(data);
+
+      // Save visit (normal entry, not security alert)
+      appendHistory({
+        timestamp: Date.now(),
+        ip: data.ip,
+        country: data.country,
+        country_code: data.country_code,
+        city: data.city,
+        region: data.region,
+        connection: {
+          isp: data.connection?.isp || null,
+          org: data.connection?.org || null,
+          asn: data.connection?.asn || null,
+          domain: data.connection?.domain || null
+        },
+        timezone: data.timezone || null,
+        securityAlert: false
+      });
+
+      renderHistory();
+      
+      // Start kill-switch monitoring
+      startKillSwitch(data.ip);
+      
+    }catch(err){
+      // Never reference an undefined `data` here.
+      $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
+      $('greetSub').textContent = buildGreetSub({ timezone: 'UTC' });
+      $('flag').innerHTML = '';
+      // keep existing history visible
+      renderHistory();
+    }
+  }
+
+  document.getElementById('clearBtn')?.addEventListener('click', () => {
+    if(confirm('Clear all saved visit history?')){
+      localStorage.removeItem(KEY); renderHistory(true);
+      const b = document.createElement('span'); b.className='badge'; b.textContent='History cleared';
+      $('changeBadges').innerHTML=''; $('changeBadges').appendChild(b);
+    }
+  });
+
+  document.getElementById('exportBtn')?.addEventListener('click', () => {
+    const data = getHistory(); const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob); const a = document.createElement('a');
+    a.href = url; a.download = 'ip-history.json'; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },0);
+  });
+
+  (function attachHeaderClicks(){ document.getElementById('histHead').addEventListener('click', (e)=>{ const th=e.target.closest('th[data-key]'); if(!th) return; setSort(th.getAttribute('data-key')); }); })();
+
+  // Parallax effect for background map
+  let ticking = false;
+  function updateParallax(e) {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 20; // Max 10px movement each direction
+        const y = (e.clientY / window.innerHeight - 0.5) * 20;
+        const mapbg = document.getElementById('mapbg');
+        if (mapbg) {
+          mapbg.style.transform = `translate(${x}px, ${y}px)`;
+        }
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }
+  
+  document.addEventListener('mousemove', updateParallax);
+
+  // Clean up kill-switch on page unload
+  window.addEventListener('beforeunload', () => {
+    stopKillSwitch();
+  });
+
+  // Make toggleTheme globally available
+  window.toggleTheme = toggleTheme;
+
+  init();
+</script>
+
+</body>
+</html>
