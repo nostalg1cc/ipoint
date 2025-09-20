@@ -51,6 +51,8 @@
       --changed-hover: linear-gradient(90deg,#ffb74a1c,transparent 80%);
       --security-bg: linear-gradient(90deg,#dc262620,transparent 80%);
       --security-hover: linear-gradient(90deg,#dc262630,transparent 80%);
+      --speedtest-bg: linear-gradient(90deg,#7aa2ff20,transparent 80%);
+      --speedtest-hover: linear-gradient(90deg,#7aa2ff30,transparent 80%);
     }
 
     [data-theme="light"] {
@@ -71,6 +73,8 @@
       --changed-hover: linear-gradient(90deg, rgba(237, 137, 54, 0.2), transparent 80%);
       --security-bg: linear-gradient(90deg, rgba(229, 62, 62, 0.12), transparent 80%);
       --security-hover: linear-gradient(90deg, rgba(229, 62, 62, 0.2), transparent 80%);
+      --speedtest-bg: linear-gradient(90deg, rgba(66, 153, 225, 0.12), transparent 80%);
+      --speedtest-hover: linear-gradient(90deg, rgba(66, 153, 225, 0.2), transparent 80%);
     }
 
     html,body{height:100%}
@@ -270,6 +274,10 @@
     tbody tr.security-alert{background:var(--security-bg);}
     tbody tr.security-alert:hover{background:var(--security-hover);}
 
+    /* Speed test styling */
+    tbody tr.speed-test{background:var(--speedtest-bg);}
+    tbody tr.speed-test:hover{background:var(--speedtest-hover);}
+
     .pill{display:inline-block;min-width:86px;text-align:center;border-radius:999px;padding:2px 8px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease;
           /* Text truncation for pills */
           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
@@ -378,9 +386,60 @@
       </div>
     </section>
 
+    <!-- Speed Test Section - Button-based design -->
     <section class="card">
-        
+      <!-- Progress bars for each test phase -->
+      <div style="margin:10px;margin-bottom:16px;">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Ping</div>
+            <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;">
+              <div id="pingProgress" style="height:100%;background:#f5b64d;border-radius:2px;width:0%;transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Download</div>
+            <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;">
+              <div id="downloadProgress" style="height:100%;background:#35c48b;border-radius:2px;width:0%;transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">Upload</div>
+            <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden;">
+              <div id="uploadProgress" style="height:100%;background:#7aa2ff;border-radius:2px;width:0%;transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div class="grid" style="margin-top:-2px">
+        <div class="kv">
+          <div class="k">Download</div>
+          <div class="v" id="downloadSpeed">—</div>
+        </div>
+        <div class="kv">
+          <div class="k">Upload</div>
+          <div class="v" id="uploadSpeed">—</div>
+        </div>
+        <div class="kv">
+          <div class="k">Ping</div>
+          <div class="v" id="pingTime">—</div>
+        </div>
+        
+        <!-- Big interactive status/start button -->
+        <div class="kv" style="position:relative;overflow:hidden;cursor:pointer;" onclick="toggleSpeedTest()" id="speedTestButton">
+          <!-- Progress background that fills the button -->
+          <div id="buttonProgress" style="position:absolute;top:0;left:0;height:100%;background:linear-gradient(90deg,var(--accent)20,transparent);width:0%;transition:width 0.3s ease;border-radius:10px;"></div>
+          
+          <div style="position:relative;z-index:1;">
+            <div class="k">Speed Test</div>
+            <div class="v" id="speedStatus" style="font-size:14px;font-weight:700;">Start Test</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
       <div style="overflow:auto">
         <table id="histTable">
           <thead>
@@ -392,6 +451,7 @@
               <th data-key="isp" data-label="ISP">ISP</th>
               <th data-key="asn" data-label="ASN">ASN</th>
               <th data-key="changed" data-label="Changed">Changed</th>
+              <th data-key="speed" data-label="Speed">Speed</th>
             </tr>
           </thead>
           <tbody id="histBody">
@@ -405,10 +465,10 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.3.1 - Fixed Mobile Table Padding (Actually This Time)</div>
+    <div>IPoint v2.4.0 - Added Speed Test Feature</div>
     <div class="version-memo">
-      <!-- AI Memo: Update version number each time edits are made. Format: v[major].[minor].[patch] -->
-      <!-- Last updated: Significantly increased mobile table padding - 16px-20px vs previous 6px-8px for proper touch targets -->
+      <!-- AI Memo: Added comprehensive speed testing with download, upload, and ping measurements -->
+      <!-- Last updated: Added speed test section with progress tracking and history integration -->
     </div>
   </div>
 
@@ -429,6 +489,11 @@
   let killSwitchInterval = null;
   const KILL_SWITCH_INTERVAL = 5000; // 5 seconds
 
+  // Speed test variables
+  let speedTestActive = false;
+  let speedTestAborted = false;
+  let currentSpeedResults = null;
+
   const $ = (id) => document.getElementById(id);
   const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
 
@@ -437,6 +502,361 @@
     if (!text) return '—';
     const str = String(text);
     return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+  }
+
+  // Speed Test Implementation - Time-based like speedtest.net
+  class SpeedTest {
+    constructor() {
+      this.baseUrl = 'https://speed.cloudflare.com/__down?bytes=';
+      this.uploadEndpoint = 'https://httpbin.org/post';
+      this.testDuration = 10; // 10 seconds per test like speedtest.net
+    }
+
+    async measurePing(samples = 10) {
+      const pings = [];
+      updateSpeedStatus('Testing ping...');
+      
+      for (let i = 0; i < samples; i++) {
+        if (speedTestAborted) return null;
+        
+        // Update ping progress
+        const progress = (i / samples) * 100;
+        document.getElementById('pingProgress').style.width = progress + '%';
+        
+        const start = performance.now();
+        try {
+          // Use multiple ping targets for accuracy
+          const targets = [
+            'https://1.1.1.1/cdn-cgi/trace',
+            'https://8.8.8.8/generate_204',
+            'https://www.google.com/generate_204'
+          ];
+          const target = targets[i % targets.length];
+          
+          await fetch(target + '?t=' + Date.now(), { 
+            mode: 'no-cors',
+            cache: 'no-store'
+          });
+        } catch (error) {
+          // Expected for no-cors
+        }
+        const end = performance.now();
+        pings.push(end - start);
+        
+        // Update display with current average
+        if (pings.length > 0) {
+          const currentAvg = pings.reduce((a, b) => a + b) / pings.length;
+          document.getElementById('pingTime').textContent = Math.round(currentAvg) + ' ms';
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Complete ping progress
+      document.getElementById('pingProgress').style.width = '100%';
+      
+      // Remove outliers and return average
+      pings.sort((a, b) => a - b);
+      const trimmed = pings.slice(1, -1); // Remove highest and lowest
+      return trimmed.reduce((a, b) => a + b) / trimmed.length;
+    }
+
+    async measureDownload() {
+      updateSpeedStatus('Testing download speed...');
+      
+      // Use larger files and test for a sustained period
+      const testSize = 1024 * 1024 * 500; // 500MB to ensure we can test for full duration
+      const startTime = performance.now();
+      const testDurationMs = this.testDuration * 1000;
+      
+      try {
+        const response = await fetch(this.baseUrl + testSize, {
+          cache: 'no-store'
+        });
+        
+        if (!response.ok) return 0;
+        
+        const reader = response.body.getReader();
+        let downloadedBytes = 0;
+        let speedReadings = [];
+        let lastSpeedTime = startTime;
+        let lastBytes = 0;
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          const currentTime = performance.now();
+          
+          if (done || currentTime - startTime > testDurationMs) {
+            reader.cancel();
+            break;
+          }
+          
+          if (speedTestAborted) {
+            reader.cancel();
+            return null;
+          }
+          
+          downloadedBytes += value ? value.length : 0;
+          
+          // Calculate speed every 250ms
+          if (currentTime - lastSpeedTime > 250) {
+            const timeDiff = (currentTime - lastSpeedTime) / 1000;
+            const bytesDiff = downloadedBytes - lastBytes;
+            const speedMbps = (bytesDiff * 8) / (timeDiff * 1024 * 1024);
+            
+            // Only count readings after first second (connection ramp-up)
+            if (currentTime - startTime > 1000) {
+              speedReadings.push(speedMbps);
+              
+              // Update display with current reading
+              document.getElementById('downloadSpeed').textContent = speedMbps.toFixed(1) + ' Mbps';
+            }
+            
+            // Update progress
+            const progress = Math.min(100, ((currentTime - startTime) / testDurationMs) * 100);
+            document.getElementById('downloadProgress').style.width = progress + '%';
+            
+            lastSpeedTime = currentTime;
+            lastBytes = downloadedBytes;
+          }
+        }
+        
+        // Complete download progress
+        document.getElementById('downloadProgress').style.width = '100%';
+        
+        if (speedReadings.length === 0) return 0;
+        
+        // Return median of all readings for accuracy (like speedtest.net)
+        speedReadings.sort((a, b) => b - a);
+        const medianIndex = Math.floor(speedReadings.length / 2);
+        return speedReadings[medianIndex];
+        
+      } catch (error) {
+        console.warn('Download test failed:', error);
+        return 0;
+      }
+    }
+
+    async measureUpload() {
+      updateSpeedStatus('Testing upload speed...');
+      
+      // Create large upload data - 100MB
+      const chunkSize = 1024 * 1024 * 5; // 5MB chunks
+      const totalChunks = 20; // 100MB total
+      const testDurationMs = this.testDuration * 1000;
+      
+      try {
+        const startTime = performance.now();
+        let uploadedBytes = 0;
+        let speedReadings = [];
+        let lastSpeedTime = startTime;
+        let lastBytes = 0;
+        
+        // Send data in chunks over time
+        for (let i = 0; i < totalChunks; i++) {
+          if (speedTestAborted) return null;
+          
+          const currentTime = performance.now();
+          if (currentTime - startTime > testDurationMs) break;
+          
+          // Create chunk data
+          const chunkData = new Uint8Array(chunkSize);
+          for (let j = 0; j < chunkSize; j++) {
+            chunkData[j] = (i * chunkSize + j * 37 + 23) % 256;
+          }
+          
+          const chunkStartTime = performance.now();
+          
+          // Upload chunk
+          const response = await fetch(this.uploadEndpoint, {
+            method: 'POST',
+            body: chunkData,
+            cache: 'no-store',
+            headers: {
+              'Content-Type': 'application/octet-stream'
+            }
+          });
+          
+          if (response.ok) {
+            await response.text(); // Ensure complete upload
+            
+            const chunkEndTime = performance.now();
+            uploadedBytes += chunkSize;
+            
+            // Calculate speed for this chunk
+            const chunkDuration = (chunkEndTime - chunkStartTime) / 1000;
+            const chunkSpeedMbps = (chunkSize * 8) / (chunkDuration * 1024 * 1024);
+            
+            // Only count after first chunk (ramp-up)
+            if (i > 0) {
+              speedReadings.push(chunkSpeedMbps);
+              
+              // Update display with current speed
+              document.getElementById('uploadSpeed').textContent = chunkSpeedMbps.toFixed(1) + ' Mbps';
+            }
+            
+            // Update progress
+            const progress = Math.min(100, ((performance.now() - startTime) / testDurationMs) * 100);
+            document.getElementById('uploadProgress').style.width = progress + '%';
+          }
+        }
+        
+        // Complete upload progress
+        document.getElementById('uploadProgress').style.width = '100%';
+        
+        if (speedReadings.length === 0) return 0;
+        
+        // Return median speed
+        speedReadings.sort((a, b) => b - a);
+        const medianIndex = Math.floor(speedReadings.length / 2);
+        return speedReadings[medianIndex];
+        
+      } catch (error) {
+        console.warn('Upload test failed:', error);
+        return 0;
+      }
+    }
+  }
+
+  const speedTester = new SpeedTest();
+
+  function updateSpeedDisplay(download, upload, ping) {
+    if (download !== null) $('downloadSpeed').textContent = download.toFixed(1) + ' Mbps';
+    if (upload !== null) $('uploadSpeed').textContent = upload.toFixed(1) + ' Mbps';
+    if (ping !== null) $('pingTime').textContent = Math.round(ping) + ' ms';
+  }
+
+  function updateSpeedStatus(message) {
+    $('speedStatus').textContent = message;
+  }
+
+  function updateButtonProgress(percent) {
+    document.getElementById('buttonProgress').style.width = percent + '%';
+  }
+
+  function resetProgressBars() {
+    document.getElementById('pingProgress').style.width = '0%';
+    document.getElementById('downloadProgress').style.width = '0%';
+    document.getElementById('uploadProgress').style.width = '0%';
+    updateButtonProgress(0);
+  }
+
+  function toggleSpeedTest() {
+    if (speedTestActive) {
+      stopSpeedTest();
+    } else {
+      startSpeedTest();
+    }
+  }
+
+  async function startSpeedTest() {
+    if (speedTestActive) return;
+    
+    speedTestActive = true;
+    speedTestAborted = false;
+    currentSpeedResults = { download: null, upload: null, ping: null };
+    
+    // Update button appearance
+    const button = $('speedTestButton');
+    button.style.cursor = 'pointer';
+    updateSpeedStatus('Testing...');
+    
+    // Reset displays and progress bars
+    $('downloadSpeed').textContent = '—';
+    $('uploadSpeed').textContent = '—';
+    $('pingTime').textContent = '—';
+    resetProgressBars();
+    
+    try {
+      // Step 1: Ping test (2-3 seconds)
+      updateSpeedStatus('Testing ping...');
+      updateButtonProgress(10);
+      
+      const ping = await speedTester.measurePing();
+      if (speedTestAborted) return;
+      currentSpeedResults.ping = ping;
+      
+      // Step 2: Download test (10 seconds)
+      updateSpeedStatus('Testing download...');
+      updateButtonProgress(40);
+      
+      const download = await speedTester.measureDownload();
+      if (speedTestAborted) return;
+      currentSpeedResults.download = download;
+      
+      // Step 3: Upload test (10 seconds)
+      updateSpeedStatus('Testing upload...');
+      updateButtonProgress(70);
+      
+      const upload = await speedTester.measureUpload();
+      if (speedTestAborted) return;
+      currentSpeedResults.upload = upload;
+      
+      updateSpeedStatus('Test Complete');
+      updateButtonProgress(100);
+      
+      // Save results
+      if (currentSpeedResults.download !== null || currentSpeedResults.upload !== null) {
+        saveSpeedTestResult();
+      }
+      
+    } catch (error) {
+      console.error('Speed test error:', error);
+      updateSpeedStatus('Test Failed');
+    } finally {
+      // Reset UI after delay
+      speedTestActive = false;
+      
+      setTimeout(() => {
+        if (!speedTestActive) {
+          updateSpeedStatus('Start Test');
+          updateButtonProgress(0);
+        }
+      }, 3000);
+    }
+  }
+
+  function stopSpeedTest() {
+    if (!speedTestActive) return;
+    
+    speedTestAborted = true;
+    speedTestActive = false;
+    
+    updateSpeedStatus('Test Stopped');
+    resetProgressBars();
+    
+    setTimeout(() => {
+      updateSpeedStatus('Start Test');
+    }, 2000);
+  }
+
+  function saveSpeedTestResult() {
+    // Get current IP data to associate with speed test
+    const hist = getHistory();
+    const lastEntry = hist[hist.length - 1];
+    
+    if (!lastEntry) return;
+    
+    // Create a speed test entry
+    const speedEntry = {
+      timestamp: Date.now(),
+      ip: lastEntry.ip,
+      country: lastEntry.country,
+      country_code: lastEntry.country_code,
+      city: lastEntry.city,
+      region: lastEntry.region,
+      connection: lastEntry.connection,
+      timezone: lastEntry.timezone,
+      speedTest: {
+        download: currentSpeedResults.download,
+        upload: currentSpeedResults.upload,
+        ping: currentSpeedResults.ping
+      },
+      isSpeedTest: true
+    };
+    
+    appendHistory(speedEntry);
+    renderHistory();
   }
 
   // Theme management
@@ -636,15 +1056,27 @@
       };
       const anyChanged = Object.values(changed).some(Boolean); 
       const isSecurityAlert = h.securityAlert || false;
+      const isSpeedTest = h.isSpeedTest || false;
+      
+      let speedDisplay = '—';
+      if (h.speedTest) {
+        const down = h.speedTest.download ? `${h.speedTest.download.toFixed(1)}↓` : '';
+        const up = h.speedTest.upload ? `${h.speedTest.upload.toFixed(1)}↑` : '';
+        const ping = h.speedTest.ping ? `${Math.round(h.speedTest.ping)}ms` : '';
+        speedDisplay = [down, up, ping].filter(Boolean).join(' ');
+      }
+      
       last = h;
       return {
         date: h.timestamp, ip: h.ip || '',
         country: (h.country || '') + (h.country_code ? ` (${h.country_code})` : ''),
         city: h.city || '', isp: (h.connection && h.connection.isp) || '',
         asn: (h.connection && h.connection.asn) || '', 
-        changed: isSecurityAlert ? 'SECURITY ALERT' : (anyChanged ? 'Yes' : 'No'),
+        changed: isSecurityAlert ? 'SECURITY ALERT' : (isSpeedTest ? 'SPEED TEST' : (anyChanged ? 'Yes' : 'No')),
+        speed: speedDisplay,
         changedFlags: changed,
-        securityAlert: isSecurityAlert
+        securityAlert: isSecurityAlert,
+        speedTest: isSpeedTest
       };
     });
 
@@ -670,6 +1102,8 @@
       const tr = document.createElement('tr');
       if (h.securityAlert) {
         tr.classList.add('security-alert');
+      } else if (h.speedTest) {
+        tr.classList.add('speed-test');
       } else if (h.changed === 'Yes') {
         tr.classList.add('entry-changed');
       }
@@ -682,6 +1116,7 @@
       const ispText = h.isp || '—';
       const asnText = h.asn || '—';
       const changedText = h.changed;
+      const speedText = h.speed || '—';
       
       tr.innerHTML = `
         <td title="${dateText}">${truncateText(dateText, 20)}</td>
@@ -690,7 +1125,8 @@
         <td title="${cityText}">${truncateText(cityText, 12)}</td>
         <td ${h.changedFlags.isp ? 'class="changed"' : ''} title="${ispText}">${truncateText(ispText, 15)}</td>
         <td ${h.changedFlags.asn ? 'class="changed"' : ''} title="${asnText}">${truncateText(asnText, 10)}</td>
-        <td style="${h.securityAlert ? 'color: #ef6a6a; font-weight: 600;' : ''}" title="${changedText}">${truncateText(changedText, 10)}</td>
+        <td style="${h.securityAlert ? 'color: #ef6a6a; font-weight: 600;' : (h.speedTest ? 'color: #7aa2ff; font-weight: 600;' : '')}" title="${changedText}">${truncateText(changedText, 12)}</td>
+        <td title="${speedText}">${truncateText(speedText, 15)}</td>
       `;
       body.appendChild(tr);
     });
@@ -1119,7 +1555,7 @@
     window.addEventListener('load', () => {
       // Create a simple service worker inline
       const swCode = `
-        const CACHE_NAME = 'ipoint-v2.3.0';
+        const CACHE_NAME = 'ipoint-v2.4.0';
         const urlsToCache = [
           '/',
           'https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css',
@@ -1197,8 +1633,11 @@
     deferredPrompt = null;
   });
 
-  // Make toggleTheme globally available
+  // Make functions globally available
   window.toggleTheme = toggleTheme;
+  window.toggleSpeedTest = toggleSpeedTest;
+  window.startSpeedTest = startSpeedTest;
+  window.stopSpeedTest = stopSpeedTest;
 
   init();
 </script>
