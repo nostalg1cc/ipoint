@@ -213,12 +213,12 @@
     
     /* Mobile responsive table */
     @media (max-width: 768px) {
-      th,td{padding:8px 6px;font-size:11px;max-width:80px}
-      table{font-size:11px}
+      th,td{padding:16px 12px;font-size:12px;max-width:120px}
+      table{font-size:12px}
     }
     
     @media (max-width: 480px) {
-      th,td{padding:6px 4px;max-width:60px}
+      th,td{padding:14px 10px;max-width:100px;font-size:11px}
       /* Hide some columns on very small screens */
       th:nth-child(4), td:nth-child(4),
       th:nth-child(6), td:nth-child(6) {display:none}
@@ -230,11 +230,11 @@
 
     /* Mobile responsive history body */
     @media (max-width: 768px) {
-      #histBody td{padding:12px 6px}
+      #histBody td{padding:20px 12px}
     }
     
     @media (max-width: 480px) {
-      #histBody td{padding:10px 4px}
+      #histBody td{padding:18px 10px}
     }
 
     #histTable th, #histTable td {text-align:center;}
@@ -242,11 +242,11 @@
     
     /* Mobile responsive history head */
     @media (max-width: 768px) {
-      #histHead th{padding:12px 6px}
+      #histHead th{padding:18px 12px}
     }
     
     @media (max-width: 480px) {
-      #histHead th{padding:10px 4px}
+      #histHead th{padding:16px 10px}
     }
 
     th{color:var(--muted);font-weight:600;user-select:none;transition:color 0.3s ease}
@@ -405,10 +405,10 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.3.0 - PWA Ready with Mobile App Support</div>
+    <div>IPoint v2.3.1 - Fixed Mobile Table Padding (Actually This Time)</div>
     <div class="version-memo">
       <!-- AI Memo: Update version number each time edits are made. Format: v[major].[minor].[patch] -->
-      <!-- Last updated: Added full PWA support with manifest, service worker, iOS compatibility, and standalone app features -->
+      <!-- Last updated: Significantly increased mobile table padding - 16px-20px vs previous 6px-8px for proper touch targets -->
     </div>
   </div>
 
