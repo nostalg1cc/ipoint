@@ -2,13 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
   <title>IPoint</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="description" content="Track your IP address location, ISP, and connection changes with real-time monitoring and kill-switch security alerts.">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IPoint">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="IPoint">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="data:application/json;charset=utf-8;base64,ewogICJuYW1lIjogIklQb2ludCAtIElQIEFkZHJlc3MgVHJhY2tlciIsCiAgInNob3J0X25hbWUiOiAiSVBvaW50IiwKICAiZGVzY3JpcHRpb24iOiAiVHJhY2sgeW91ciBJUCBhZGRyZXNzIGxvY2F0aW9uLCBJU1AsIGFuZCBjb25uZWN0aW9uIGNoYW5nZXMgd2l0aCByZWFsLXRpbWUgbW9uaXRvcmluZy4iLAogICJzdGFydF91cmwiOiAiLyIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBmMTExNSIsCiAgInRoZW1lX2NvbG9yIjogIiMwZjExMTUiLAogICJvcmllbnRhdGlvbiI6ICJwb3J0cmFpdC1wcmltYXJ5IiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M00zUXViM0puTHpJd01EQXZjM1puSWlCM2FXUjBhRDBpTWpVMklpQm9aV2xuYUhROUlqSTFOaUkrUEhKbFkzUWdkMmxrZEdnOUlqSTFOaUlnYUdWcFoyaDBQU0l5TlRZaUlHWnBiR3c5SWlNd1pqRXhNVFVpTHo0OFkybHlZMnhsSUdONFBTSXhNamdpSUdONVBTSXhNamdpSUhJOUlqUXdJaUJtYVd4c1BTSWpOMkZoTW1abUlpOCtQSFJsZUhRZ2VEMGlNVEk0SWlCNVBTSXhNalFpSUhSbGVIUXRZVzVqYUc5eVBTSnRhV1JrYkdVaUlHWnBiR3c5SWlOaE5tRm1ZbVFpSUdadmJuUXRjMmw2WlQwaU1qQWlQa2xRUEM5MFpYaDBQand2YzNablBnPT0iLAogICAgICAic2l6ZXMiOiAiMjU2eDI1NiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9LAogICAgewogICAgICAic3JjIjogImRhdGE6aW1hZ2Uvc3ZnK3htbDtiYXNlNjQsUEhOMlp5QjRiV3h1Y3owaWFIUjBjRG92TDNkM2R5NTNNM1F1YjNKbkx6SXdNREF2YzNabklpQjNhV1IwYUQwaU5UQXlJaUJvWldsbmFIUTlJalV3TWlJK1BISmxZM1FnZDJsa2RHZzlJalV3TWlJZ2FHVnBaMmgwUFNJMU1ESWlJR1pwYkd3OUlpTXdaakV4TVRVaUx6NDhZMmx5WTJ4bElHTjRQU0l5TlRFaUlHTjVQU0l5TlRFaUlISTlJakF3SWlCbWFXeHNQU0lqTjJGaE1tWm1JaTgrUEhSbGVIUWdlRDBpTWpVeElpQjVQU0l5TkRjaUlIUmxlSFF0WVc1amFHOXlQU0p0YVdSa2JHVWlJR1pwYkd3OUlpTmhObUZtWW1RaUlHWnZiblF0YzJsNlpUMGlORFFpUGtsUVBDOTBaWGgwUGp3dmMzWm5QZz09IiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9zdmcreG1sIgogICAgfQogIF0KfQ==">
 
   <!-- Favicon updates to the current country flag -->
   <link rel="icon" type="image/png" sizes="16x16" href="https://flagsapi.com/US/flat/16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="https://flagsapi.com/US/flat/32.png">
   <link rel="icon" type="image/png" sizes="64x64" href="https://flagsapi.com/US/flat/64.png">
+
+  <!-- Apple Touch Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iIzBmMTExNSIvPjxjaXJjbGUgY3g9IjkwIiBjeT0iOTAiIHI9IjMwIiBmaWxsPSIjN2FhMmZmIi8+PHRleHQgeD0iOTAiIHk9Ijk1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjYTZhZmJkIiBmb250LXNpemU9IjE2Ij5JUDwvdGV4dD48L3N2Zz4=">
 
   <!-- Flag icons (ISO country codes) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css">
@@ -58,8 +73,22 @@
       --security-hover: linear-gradient(90deg, rgba(229, 62, 62, 0.2), transparent 80%);
     }
 
-    *{box-sizing:border-box}
     html,body{height:100%}
+    
+    /* PWA and Standalone app adjustments */
+    @media (display-mode: standalone) {
+      body { padding-top: env(safe-area-inset-top); }
+      main { padding-bottom: env(safe-area-inset-bottom); }
+    }
+
+    /* iOS Safari specific adjustments */
+    @supports (-webkit-touch-callout: none) {
+      body { -webkit-touch-callout: none; -webkit-user-select: none; }
+      input, textarea, button { -webkit-user-select: auto; }
+      body { padding-top: constant(safe-area-inset-top); padding-top: env(safe-area-inset-top); }
+      main { padding-bottom: constant(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); }
+    }
+    *{box-sizing:border-box}
     body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;position:relative;transition:background-color 0.3s ease, color 0.3s ease}
 
     /* Soft background map with parallax */
@@ -184,12 +213,12 @@
     
     /* Mobile responsive table */
     @media (max-width: 768px) {
-      th,td{padding:6px 4px;font-size:11px;max-width:80px}
+      th,td{padding:8px 6px;font-size:11px;max-width:80px}
       table{font-size:11px}
     }
     
     @media (max-width: 480px) {
-      th,td{padding:4px 2px;max-width:60px}
+      th,td{padding:6px 4px;max-width:60px}
       /* Hide some columns on very small screens */
       th:nth-child(4), td:nth-child(4),
       th:nth-child(6), td:nth-child(6) {display:none}
@@ -201,7 +230,11 @@
 
     /* Mobile responsive history body */
     @media (max-width: 768px) {
-      #histBody td{padding:8px 4px}
+      #histBody td{padding:12px 6px}
+    }
+    
+    @media (max-width: 480px) {
+      #histBody td{padding:10px 4px}
     }
 
     #histTable th, #histTable td {text-align:center;}
@@ -209,7 +242,11 @@
     
     /* Mobile responsive history head */
     @media (max-width: 768px) {
-      #histHead th{padding:8px 4px}
+      #histHead th{padding:12px 6px}
+    }
+    
+    @media (max-width: 480px) {
+      #histHead th{padding:10px 4px}
     }
 
     th{color:var(--muted);font-weight:600;user-select:none;transition:color 0.3s ease}
@@ -368,10 +405,10 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.2.0 - Fixed Grid Layout (4x2 desktop, 2x4 mobile)</div>
+    <div>IPoint v2.3.0 - PWA Ready with Mobile App Support</div>
     <div class="version-memo">
       <!-- AI Memo: Update version number each time edits are made. Format: v[major].[minor].[patch] -->
-      <!-- Last updated: Fixed grid layout to always show in pairs - 4 columns/2 rows on desktop, 2 columns/4 rows on mobile -->
+      <!-- Last updated: Added full PWA support with manifest, service worker, iOS compatibility, and standalone app features -->
     </div>
   </div>
 
@@ -1075,6 +1112,89 @@
   // Clean up kill-switch on page unload
   window.addEventListener('beforeunload', () => {
     stopKillSwitch();
+  });
+
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Create a simple service worker inline
+      const swCode = `
+        const CACHE_NAME = 'ipoint-v2.3.0';
+        const urlsToCache = [
+          '/',
+          'https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css',
+          'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+          'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+        ];
+
+        self.addEventListener('install', event => {
+          event.waitUntil(
+            caches.open(CACHE_NAME)
+              .then(cache => cache.addAll(urlsToCache))
+              .then(() => self.skipWaiting())
+          );
+        });
+
+        self.addEventListener('activate', event => {
+          event.waitUntil(
+            caches.keys().then(cacheNames => {
+              return Promise.all(
+                cacheNames.map(cacheName => {
+                  if (cacheName !== CACHE_NAME) {
+                    return caches.delete(cacheName);
+                  }
+                })
+              );
+            }).then(() => self.clients.claim())
+          );
+        });
+
+        self.addEventListener('fetch', event => {
+          if (event.request.url.includes('ipwho.is') || 
+              event.request.url.includes('ipapi.co') || 
+              event.request.url.includes('ipify.org') ||
+              event.request.url.includes('flagsapi.com')) {
+            // Don't cache API requests - always fetch fresh
+            return;
+          }
+          
+          event.respondWith(
+            caches.match(event.request)
+              .then(response => {
+                if (response) {
+                  return response;
+                }
+                return fetch(event.request);
+              })
+          );
+        });
+      `;
+
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+
+      navigator.serviceWorker.register(swUrl)
+        .then(registration => {
+          console.log('PWA: Service Worker registered successfully');
+        })
+        .catch(error => {
+          console.log('PWA: Service Worker registration failed');
+        });
+    });
+  }
+
+  // PWA Install Prompt
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Could show an install button here if desired
+  });
+
+  // Handle app installation
+  window.addEventListener('appinstalled', () => {
+    console.log('PWA: App was installed successfully');
+    deferredPrompt = null;
   });
 
   // Make toggleTheme globally available
