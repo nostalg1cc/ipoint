@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Random Greeting Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .greeting { font-size: 18px; font-weight: bold; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+        .results { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Random Greeting Selection Test</h1>
+    <p>Click the buttons to test random greeting selection. You should see different variations each time!</p>
+    
+    <div class="test-section">
+        <h3>Test Random Selection</h3>
+        <button onclick="testRandomGreetings('en', 'morning')">English Morning</button>
+        <button onclick="testRandomGreetings('de', 'afternoon')">German Afternoon</button>
+        <button onclick="testRandomGreetings('fr', 'evening')">French Evening</button>
+        <button onclick="testRandomGreetings('es', 'night')">Spanish Night</button>
+        <button onclick="testRandomGreetings('ja', 'morning')">Japanese Morning</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+    
+    <div id="results" class="results"></div>
+
+    <script>
+        const GREETINGS = {
+            en:{
+                morning:['Good morning!', 'Morning!', 'Good day!', 'Hello there!', 'Rise and shine!'],
+                afternoon:['Good afternoon!', 'Afternoon!', 'Hello!', 'Hi there!', 'Hope you\'re having a great day!'],
+                evening:['Good evening!', 'Evening!', 'Hello!', 'Hi there!', 'Hope you had a good day!'],
+                night:['Good night!', 'Night!', 'Sleep well!', 'Sweet dreams!', 'Rest well!']
+            },
+            de:{
+                morning:['Guten Morgen!', 'Moin!', 'Hallo!', 'Guten Tag!', 'Morgen!'],
+                afternoon:['Guten Tag!', 'Hallo!', 'Tag!', 'Servus!', 'Grüß Gott!'],
+                evening:['Guten Abend!', 'Abend!', 'Hallo!', 'Servus!', 'Schönen Abend!'],
+                night:['Gute Nacht!', 'Nacht!', 'Schlaf gut!', 'Träum schön!', 'Gute Ruh!']
+            },
+            fr:{
+                morning:['Bonjour!', 'Salut!', 'Coucou!', 'Bon matin!', 'Bonne journée!'],
+                afternoon:['Bonjour!', 'Salut!', 'Coucou!', 'Bon après-midi!', 'Salut là!'],
+                evening:['Bonsoir!', 'Salut!', 'Bonne soirée!', 'Coucou!', 'Salut là!'],
+                night:['Bonne nuit!', 'Nuit!', 'Dors bien!', 'Fais de beaux rêves!', 'Repose-toi bien!']
+            },
+            es:{
+                morning:['¡Buenos días!', '¡Hola!', '¡Buen día!', '¡Qué tal!', '¡Buenas!'],
+                afternoon:['¡Buenas tardes!', '¡Hola!', '¡Buenas!', '¡Qué tal!', '¡Buen día!'],
+                evening:['¡Buenas tardes!', '¡Hola!', '¡Buenas!', '¡Qué tal!', '¡Buenas noches!'],
+                night:['¡Buenas noches!', '¡Noches!', '¡Que descanses!', '¡Dulces sueños!', '¡Hasta mañana!']
+            },
+            ja:{
+                morning:['おはよう!', 'おはようございます!', 'こんにちは!', 'おはよう!', '良い一日を!'],
+                afternoon:['こんにちは!', 'おはよう!', 'こんにちは!', 'こんにちは!', '良い一日を!'],
+                evening:['こんばんは!', 'おはよう!', 'こんにちは!', 'こんばんは!', '良い夜を!'],
+                night:['おやすみなさい!', 'おやすみ!', '良い夢を!', 'ゆっくり休んで!', 'おやすみ!']
+            }
+        };
+
+        function getRandomGreeting(lang, time) {
+            const greetings = GREETINGS[lang]?.[time] || GREETINGS.en[time];
+            if (Array.isArray(greetings)) {
+                return greetings[Math.floor(Math.random() * greetings.length)];
+            }
+            return greetings;
+        }
+
+        function testRandomGreetings(lang, time) {
+            const resultsContainer = document.getElementById('results');
+            const greetingDiv = document.createElement('div');
+            greetingDiv.className = 'greeting';
+            
+            const greeting = getRandomGreeting(lang, time);
+            const timestamp = new Date().toLocaleTimeString();
+            
+            greetingDiv.innerHTML = `
+                <strong>${lang.toUpperCase()} ${time}:</strong><br>
+                ${greeting}<br>
+                <small>${timestamp}</small>
+            `;
+            
+            resultsContainer.appendChild(greetingDiv);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Test multiple random selections on page load
+        window.onload = function() {
+            console.log('Testing random greeting selection...');
+            for (let i = 0; i < 5; i++) {
+                console.log('English morning:', getRandomGreeting('en', 'morning'));
+                console.log('German afternoon:', getRandomGreeting('de', 'afternoon'));
+                console.log('French evening:', getRandomGreeting('fr', 'evening'));
+            }
+        };
+    </script>
+</body>
+</html>

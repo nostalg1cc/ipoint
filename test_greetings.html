@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Greeting Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .greeting { font-size: 18px; font-weight: bold; margin: 10px 0; }
+        button { padding: 10px 15px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #005a87; }
+    </style>
+</head>
+<body>
+    <h1>Greeting Variations Test</h1>
+    
+    <div class="test-section">
+        <h3>English Greetings</h3>
+        <button onclick="testGreetings('en')">Test English</button>
+        <div id="en-greetings"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>German Greetings</h3>
+        <button onclick="testGreetings('de')">Test German</button>
+        <div id="de-greetings"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>French Greetings</h3>
+        <button onclick="testGreetings('fr')">Test French</button>
+        <div id="fr-greetings"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Spanish Greetings</h3>
+        <button onclick="testGreetings('es')">Test Spanish</button>
+        <div id="es-greetings"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Japanese Greetings</h3>
+        <button onclick="testGreetings('ja')">Test Japanese</button>
+        <div id="ja-greetings"></div>
+    </div>
+
+    <script>
+        // Copy the greeting data from the main file
+        const GREETINGS = {
+            en:{
+                morning:['Good morning!', 'Morning!', 'Good day!', 'Hello there!', 'Rise and shine!'],
+                afternoon:['Good afternoon!', 'Afternoon!', 'Hello!', 'Hi there!', 'Hope you\'re having a great day!'],
+                evening:['Good evening!', 'Evening!', 'Hello!', 'Hi there!', 'Hope you had a good day!'],
+                night:['Good night!', 'Night!', 'Sleep well!', 'Sweet dreams!', 'Rest well!']
+            },
+            de:{
+                morning:['Guten Morgen!', 'Moin!', 'Hallo!', 'Guten Tag!', 'Morgen!'],
+                afternoon:['Guten Tag!', 'Hallo!', 'Tag!', 'Servus!', 'Grüß Gott!'],
+                evening:['Guten Abend!', 'Abend!', 'Hallo!', 'Servus!', 'Schönen Abend!'],
+                night:['Gute Nacht!', 'Nacht!', 'Schlaf gut!', 'Träum schön!', 'Gute Ruh!']
+            },
+            fr:{
+                morning:['Bonjour!', 'Salut!', 'Coucou!', 'Bon matin!', 'Bonne journée!'],
+                afternoon:['Bonjour!', 'Salut!', 'Coucou!', 'Bon après-midi!', 'Salut là!'],
+                evening:['Bonsoir!', 'Salut!', 'Bonne soirée!', 'Coucou!', 'Salut là!'],
+                night:['Bonne nuit!', 'Nuit!', 'Dors bien!', 'Fais de beaux rêves!', 'Repose-toi bien!']
+            },
+            es:{
+                morning:['¡Buenos días!', '¡Hola!', '¡Buen día!', '¡Qué tal!', '¡Buenas!'],
+                afternoon:['¡Buenas tardes!', '¡Hola!', '¡Buenas!', '¡Qué tal!', '¡Buen día!'],
+                evening:['¡Buenas tardes!', '¡Hola!', '¡Buenas!', '¡Qué tal!', '¡Buenas noches!'],
+                night:['¡Buenas noches!', '¡Noches!', '¡Que descanses!', '¡Dulces sueños!', '¡Hasta mañana!']
+            },
+            ja:{
+                morning:['おはよう!', 'おはようございます!', 'こんにちは!', 'おはよう!', '良い一日を!'],
+                afternoon:['こんにちは!', 'おはよう!', 'こんにちは!', 'こんにちは!', '良い一日を!'],
+                evening:['こんばんは!', 'おはよう!', 'こんにちは!', 'こんばんは!', '良い夜を!'],
+                night:['おやすみなさい!', 'おやすみ!', '良い夢を!', 'ゆっくり休んで!', 'おやすみ!']
+            }
+        };
+
+        function testGreetings(lang) {
+            const container = document.getElementById(lang + '-greetings');
+            container.innerHTML = '';
+            
+            const times = ['morning', 'afternoon', 'evening', 'night'];
+            const greetings = GREETINGS[lang];
+            
+            times.forEach(time => {
+                const timeDiv = document.createElement('div');
+                timeDiv.innerHTML = `<strong>${time.charAt(0).toUpperCase() + time.slice(1)}:</strong>`;
+                container.appendChild(timeDiv);
+                
+                greetings[time].forEach(greeting => {
+                    const greetingDiv = document.createElement('div');
+                    greetingDiv.className = 'greeting';
+                    greetingDiv.textContent = greeting;
+                    container.appendChild(greetingDiv);
+                });
+                
+                const separator = document.createElement('hr');
+                container.appendChild(separator);
+            });
+        }
+    </script>
+</body>
+</html>
