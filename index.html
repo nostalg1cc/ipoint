@@ -35,18 +35,36 @@
   <style>
     /* Tooltip/popup styles */
     .date-popup {
-      position: absolute;
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
+      position: fixed;
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 16px 20px;
       z-index: 1000;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.2s ease;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 13px;
+      backdrop-filter: blur(8px) saturate(120%);
+      max-width: 300px;
+      overflow: hidden;
+    }
+    
+    .date-popup::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: var(--card-border);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: -1;
+      transition: background 0.3s ease;
     }
     
     .date-popup.visible {
@@ -56,22 +74,35 @@
     .date-popup-content {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 8px;
+      text-align: left;
+      position: relative;
+      z-index: 1;
     }
     
     .date-popup-time {
       color: var(--text);
-      font-weight: 600;
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.4;
     }
     
     .date-popup-ago {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.9;
     }
     
     /* Make date cells interactive */
     td.date-cell {
       position: relative;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    
+    td.date-cell:hover {
+      background-color: var(--hover-bg);
     }
     
     :root{
@@ -128,8 +159,8 @@
 
     /* iOS Safari specific adjustments */
     @supports (-webkit-touch-callout: none) {
-      body { -webkit-touch-callout: none; -webkit-user-select: none; }
-      input, textarea, button { -webkit-user-select: auto; }
+      body { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+      input, textarea, button { -webkit-user-select: auto; user-select: auto; }
       body { padding-top: constant(safe-area-inset-top); padding-top: env(safe-area-inset-top); }
       main { padding-bottom: constant(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); }
     }
@@ -208,16 +239,72 @@
     .badge.bad{border-color:#7b1b1b;background:#7b1b1b18;color:#ffbdbd}
     .badge.neutral{border-color:#2a2f3b;background:#2a2f3b66;color:#c9cfdb}
     .badge.security{border-color:#b91c1c;background:#b91c1c30;color:#fca5a5;animation:pulse-security 2s infinite}
+    .badge.more{border-color:var(--accent);background:var(--accent)20;color:var(--accent);cursor:pointer;transition:all 0.3s ease}
+    .badge.more:hover{background:var(--accent)30;transform:translateY(-1px)}
 
     [data-theme="light"] .badge.good{border-color:#38a169;background:#38a16920;color:#22543d}
     [data-theme="light"] .badge.warn{border-color:#ed8936;background:#ed893620;color:#c05621}
     [data-theme="light"] .badge.bad{border-color:#e53e3e;background:#e53e3e20;color:#c53030}
     [data-theme="light"] .badge.neutral{border-color:#a0aec0;background:#cbd5e140;color:#4a5568}
     [data-theme="light"] .badge.security{border-color:#e53e3e;background:#fed7d740;color:#c53030;animation:pulse-security 2s infinite}
+    [data-theme="light"] .badge.more{border-color:var(--accent);background:var(--accent)20;color:var(--accent)}
+    [data-theme="light"] .badge.more:hover{background:var(--accent)30}
+
+    /* Badge container responsive styling */
+    .badge-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      max-width: 100%;
+    }
+    
+    .badge-container.collapsed {
+      flex-wrap: nowrap;
+      overflow: hidden;
+    }
+    
+    .badge-container.collapsed .badge:not(.more) {
+      flex-shrink: 0;
+    }
+    
+    .badge-container.expanded {
+      flex-wrap: wrap;
+    }
+    
+    .badge-container .badge.more {
+      flex-shrink: 0;
+      margin-left: auto;
+    }
 
     /* Mobile responsive badge */
     @media (max-width: 768px) {
-      .badge{font-size:11px;padding:3px 6px;max-width:100px}
+      .badge{
+        font-size: 11px;
+        padding: 3px 6px;
+        max-width: 100px;
+      }
+      
+      .badge-container {
+        gap: 4px;
+        max-width: 100%;
+      }
+      
+      .badge-container.collapsed {
+        max-width: calc(100vw - 40px);
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .badge{
+        font-size: 10px;
+        padding: 2px 5px;
+        max-width: 80px;
+      }
+      
+      .badge-container {
+        gap: 3px;
+      }
     }
 
     /* Theme toggle button */
@@ -283,15 +370,28 @@
     }
 
     #histTable th, #histTable td {text-align:center;}
-    #histHead th {text-align:center;padding:14px;}
+    #histHead th {
+      text-align:center;
+      padding: 16px 14px;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
     
     /* Mobile responsive history head */
     @media (max-width: 768px) {
-      #histHead th{padding:18px 12px}
+      #histHead th{
+        padding: 14px 12px;
+        font-size: 12px;
+      }
     }
     
     @media (max-width: 480px) {
-      #histHead th{padding:16px 10px}
+      #histHead th{
+        padding: 12px 10px;
+        font-size: 11px;
+      }
     }
 
     th{color:var(--muted);font-weight:600;user-select:none;transition:color 0.3s ease}
@@ -347,20 +447,61 @@
                       /* Text truncation for IPv6 */
                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
 
-    #moreBtn{margin:12px 0 28px; margin: 0 44%;width:auto; padding:10px 12px; border-radius:10px; background:var(--button-bg); color:var(--text); border:1px solid var(--line); cursor:pointer;transition:all 0.3s ease}
-    #moreBtn:hover{background:var(--button-hover)}
+    #moreBtn{
+      margin: 16px auto 24px; 
+      width: auto; 
+      padding: 12px 20px; 
+      border-radius: 12px; 
+      background: var(--button-bg); 
+      color: var(--text); 
+      border: 1px solid var(--line); 
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      font-size: 13px;
+      display: block;
+      text-align: center;
+    }
+    #moreBtn:hover{
+      background: var(--button-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
     
     /* Mobile responsive more button */
     @media (max-width: 768px) {
-      #moreBtn{margin:8px auto;padding:8px 10px;font-size:13px;width:auto;display:block}
+      #moreBtn{
+        margin: 12px auto 16px;
+        padding: 10px 16px;
+        font-size: 12px;
+        width: auto;
+        display: block;
+      }
     }
 
-    button{background:var(--button-bg);color:var(--text);border:1px solid var(--line);padding:8px 12px;border-radius:10px;cursor:pointer;transition:all 0.3s ease}
-    button:hover{background:var(--button-hover)}
+    button{
+      background: var(--button-bg);
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      font-size: 13px;
+    }
+    button:hover{
+      background: var(--button-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
 
     /* Mobile responsive button */
     @media (max-width: 768px) {
-      button{padding:6px 10px;font-size:13px}
+      button{
+        padding: 8px 12px;
+        font-size: 12px;
+      }
     }
 
     /* Version footer */
@@ -404,9 +545,11 @@
           </div>
         </div>
         <div class="row" id="changeBadges" style="gap:6px">
-          <div class="theme-toggle" onclick="toggleTheme()">
-            <span id="themeIcon">🌙</span>
-            <span id="themeText">Dark</span>
+          <div class="badge-container collapsed" id="badgeContainer">
+            <div class="theme-toggle" onclick="toggleTheme()">
+              <span id="themeIcon">🌙</span>
+              <span id="themeText">Dark</span>
+            </div>
           </div>
         </div>
       </div>
@@ -508,10 +651,10 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.5.0 - Enhanced Date Display with Popups</div>
+    <div>IPoint v2.6.0 - Responsive Badge System & Cursor Popups</div>
     <div class="version-memo">
-      <!-- AI Memo: Added interactive date popups showing full timestamp and relative time -->
-      <!-- Last updated: Improved date column to show only date with hover/touch popup for details -->
+      <!-- AI Memo: Added responsive badge container with more/less toggle for mobile -->
+      <!-- Last updated: Cursor-based popup positioning and mobile-optimized badge display -->
     </div>
   </div>
 
@@ -576,8 +719,16 @@
   // Create and manage date popup
   let currentPopup = null;
   let popupTimeout = null;
+  let currentMouseX = 0;
+  let currentMouseY = 0;
   
-  function createDatePopup(timestamp, targetElement) {
+  // Track mouse position
+  document.addEventListener('mousemove', (e) => {
+    currentMouseX = e.clientX;
+    currentMouseY = e.clientY;
+  });
+  
+  function createDatePopup(timestamp, targetElement, event) {
     // Remove any existing popup
     if (currentPopup) {
       currentPopup.remove();
@@ -610,22 +761,31 @@
     
     document.body.appendChild(popup);
     
-    // Position popup
-    const rect = targetElement.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    // Position popup at cursor, to the right
+    const mouseX = event ? event.clientX : currentMouseX;
+    const mouseY = event ? event.clientY : currentMouseY;
+    const offset = 15; // Distance from cursor
     
-    popup.style.left = (rect.left + scrollLeft) + 'px';
-    popup.style.top = (rect.bottom + scrollTop + 5) + 'px';
+    popup.style.left = (mouseX + offset) + 'px';
+    popup.style.top = (mouseY - 10) + 'px';
+    popup.style.transform = 'none';
     
     // Check if popup goes off screen and adjust
     setTimeout(() => {
       const popupRect = popup.getBoundingClientRect();
+      
+      // Adjust horizontal position if it goes off screen
       if (popupRect.right > window.innerWidth) {
-        popup.style.left = (window.innerWidth - popupRect.width - 10) + 'px';
+        popup.style.left = (mouseX - popupRect.width - offset) + 'px';
+      } else if (popupRect.left < 0) {
+        popup.style.left = '10px';
       }
-      if (popupRect.bottom > window.innerHeight) {
-        popup.style.top = (rect.top + scrollTop - popupRect.height - 5) + 'px';
+      
+      // Adjust vertical position if it goes off screen
+      if (popupRect.top < 0) {
+        popup.style.top = (mouseY + offset) + 'px';
+      } else if (popupRect.bottom > window.innerHeight) {
+        popup.style.top = (mouseY - popupRect.height - offset) + 'px';
       }
       
       // Show popup with animation
@@ -652,7 +812,7 @@
     // Desktop hover
     td.addEventListener('mouseenter', (e) => {
       clearTimeout(popupTimeout);
-      createDatePopup(timestamp, td);
+      createDatePopup(timestamp, td, e);
     });
     
     td.addEventListener('mouseleave', (e) => {
@@ -668,7 +828,7 @@
       if (currentPopup && currentPopup.targetElement === td) {
         hidePopup();
       } else {
-        createDatePopup(timestamp, td);
+        createDatePopup(timestamp, td, e);
         currentPopup.targetElement = td;
         
         // Auto-hide after 3 seconds on mobile
@@ -1157,17 +1317,48 @@
     return VPN_KEYWORDS.some(k => hay.includes(k));
   }
 
-  function diffBadges(prev, curr, isSecurityAlert = false){
-    const wrap = $('changeBadges'); 
-    
-    // Keep the theme toggle
-    const themeToggle = wrap.querySelector('.theme-toggle');
-    wrap.innerHTML = '';
-    if (themeToggle) {
-      wrap.appendChild(themeToggle);
+  // Badge container state
+  let badgeContainerExpanded = false;
+  let allBadges = [];
+  let maxVisibleBadges = 3; // Maximum badges to show in collapsed state
+
+  // Responsive badge handling
+  function updateMaxVisibleBadges() {
+    const width = window.innerWidth;
+    if (width <= 480) {
+      maxVisibleBadges = 1; // Very small screens
+    } else if (width <= 768) {
+      maxVisibleBadges = 2; // Mobile screens
+    } else {
+      maxVisibleBadges = 3; // Desktop screens
     }
     
-    if(!prev) return;
+    // Re-render badges if they exist
+    if (allBadges.length > 0) {
+      renderBadges();
+    }
+  }
+
+  // Update on resize
+  window.addEventListener('resize', updateMaxVisibleBadges);
+  
+  // Initialize on load
+  updateMaxVisibleBadges();
+
+  function diffBadges(prev, curr, isSecurityAlert = false){
+    const container = $('badgeContainer');
+    
+    // Keep the theme toggle
+    const themeToggle = container.querySelector('.theme-toggle');
+    container.innerHTML = '';
+    if (themeToggle) {
+      container.appendChild(themeToggle);
+    }
+    
+    if(!prev) {
+      container.className = 'badge-container collapsed';
+      return;
+    }
     
     const changed = [];
     if(prev.ip !== curr.ip) changed.push(['IP', 'bad']);
@@ -1180,20 +1371,57 @@
       changed.unshift(['🚨 KILL-SWITCH', 'security']);
     }
     
+    // Store all badges for responsive display
+    allBadges = [];
     for(const [label, type] of changed){
+      const text = `${label} ${type === 'security' ? 'TRIGGERED' : 'changed'}`;
+      allBadges.push({ label, type, text });
+    }
+    
+    if(changed.length === 0){
+      allBadges.push({ label: 'No changes', type: 'good', text: 'No changes' });
+    }
+    
+    // Render badges based on current state
+    renderBadges();
+  }
+
+  function renderBadges() {
+    const container = $('badgeContainer');
+    const themeToggle = container.querySelector('.theme-toggle');
+    
+    // Clear existing badges (keep theme toggle)
+    const existingBadges = container.querySelectorAll('.badge:not(.more)');
+    existingBadges.forEach(badge => badge.remove());
+    
+    // Determine how many badges to show
+    const badgesToShow = badgeContainerExpanded ? allBadges : allBadges.slice(0, maxVisibleBadges);
+    
+    // Add visible badges
+    badgesToShow.forEach(({ label, type, text }) => {
       const b = document.createElement('span');
       b.className = 'badge ' + type;
-      const text = `${label} ${type === 'security' ? 'TRIGGERED' : 'changed'}`;
       b.textContent = truncateText(text, 15);
-      b.title = text; // Full text on hover
-      wrap.appendChild(b);
+      b.title = text;
+      container.appendChild(b);
+    });
+    
+    // Add more/less toggle if needed
+    if (allBadges.length > maxVisibleBadges) {
+      const toggleBadge = document.createElement('span');
+      toggleBadge.className = 'badge more';
+      toggleBadge.textContent = badgeContainerExpanded ? 'Less' : `+${allBadges.length - maxVisibleBadges} more`;
+      toggleBadge.onclick = toggleBadgeContainer;
+      container.appendChild(toggleBadge);
     }
-    if(changed.length === 0){
-      const b = document.createElement('span'); 
-      b.className = 'badge good'; 
-      b.textContent = 'No changes'; 
-      wrap.appendChild(b);
-    }
+    
+    // Update container class
+    container.className = `badge-container ${badgeContainerExpanded ? 'expanded' : 'collapsed'}`;
+  }
+
+  function toggleBadgeContainer() {
+    badgeContainerExpanded = !badgeContainerExpanded;
+    renderBadges();
   }
 
   function appendHistory(entry){
@@ -1773,7 +2001,7 @@
     window.addEventListener('load', () => {
       // Create a simple service worker inline
       const swCode = `
-        const CACHE_NAME = 'ipoint-v2.5.0';
+        const CACHE_NAME = 'ipoint-v2.6.0';
         const urlsToCache = [
           '/',
           'https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css',
