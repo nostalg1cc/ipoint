@@ -231,9 +231,23 @@
       .flag{width:24px;height:18px}
     }
 
-    .badge{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease;
-           /* Text truncation for badges */
-           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+    .badge{
+      font-size: 12px;
+      padding: 6px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--badge-bg);
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      box-sizing: border-box;
+    }
     .badge.good{border-color:#1b7b59;background:#1b7b5918;color:#87f1c7}
     .badge.warn{border-color:#7b5a1b;background:#7b5a1b18;color:#ffdca3}
     .badge.bad{border-color:#7b1b1b;background:#7b1b1b18;color:#ffbdbd}
@@ -281,8 +295,9 @@
     @media (max-width: 768px) {
       .badge{
         font-size: 11px;
-        padding: 3px 6px;
+        padding: 5px 6px;
         max-width: 100px;
+        min-height: 26px;
       }
       
       .badge-container {
@@ -298,8 +313,9 @@
     @media (max-width: 480px) {
       .badge{
         font-size: 10px;
-        padding: 2px 5px;
+        padding: 4px 5px;
         max-width: 80px;
+        min-height: 24px;
       }
       
       .badge-container {
@@ -309,7 +325,7 @@
 
     /* Theme toggle button */
     .theme-toggle {
-      background: var(--button-bg);
+      background: var(--badge-bg);
       border: 1px solid var(--line);
       border-radius: 20px;
       padding: 6px 8px;
@@ -322,6 +338,8 @@
       user-select: none;
       min-width: 60px;
       justify-content: center;
+      min-height: 28px;
+      box-sizing: border-box;
     }
     
     .theme-toggle:hover {
@@ -330,7 +348,21 @@
 
     /* Mobile responsive theme toggle */
     @media (max-width: 768px) {
-      .theme-toggle{font-size:11px;padding:5px 6px;min-width:50px}
+      .theme-toggle{
+        font-size: 11px;
+        padding: 5px 6px;
+        min-width: 50px;
+        min-height: 26px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .theme-toggle{
+        font-size: 10px;
+        padding: 4px 5px;
+        min-width: 45px;
+        min-height: 24px;
+      }
     }
 
     @keyframes pulse-security {
@@ -651,10 +683,10 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.6.0 - Responsive Badge System & Cursor Popups</div>
+    <div>IPoint v2.6.1 - Perfect UI Alignment & Polish</div>
     <div class="version-memo">
-      <!-- AI Memo: Added responsive badge container with more/less toggle for mobile -->
-      <!-- Last updated: Cursor-based popup positioning and mobile-optimized badge display -->
+      <!-- AI Memo: Perfect alignment between badges and theme toggle with consistent styling -->
+      <!-- Last updated: Final polish - matching padding, height, and visual consistency -->
     </div>
   </div>
 
@@ -2002,7 +2034,7 @@
     window.addEventListener('load', () => {
       // Create a simple service worker inline
       const swCode = `
-        const CACHE_NAME = 'ipoint-v2.6.0';
+        const CACHE_NAME = 'ipoint-v2.6.1';
         const urlsToCache = [
           '/',
           'https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css',
