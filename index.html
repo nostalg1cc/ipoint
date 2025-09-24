@@ -1348,15 +1348,12 @@
   function diffBadges(prev, curr, isSecurityAlert = false){
     const container = $('badgeContainer');
     
-    // Keep the theme toggle
-    const themeToggle = container.querySelector('.theme-toggle');
-    container.innerHTML = '';
-    if (themeToggle) {
-      container.appendChild(themeToggle);
-    }
+    // Reset expansion state when new badges are created
+    badgeContainerExpanded = false;
     
     if(!prev) {
       container.className = 'badge-container collapsed';
+      allBadges = [];
       return;
     }
     
@@ -1388,11 +1385,15 @@
 
   function renderBadges() {
     const container = $('badgeContainer');
+    
+    // Store theme toggle
     const themeToggle = container.querySelector('.theme-toggle');
     
-    // Clear existing badges (keep theme toggle)
-    const existingBadges = container.querySelectorAll('.badge:not(.more)');
-    existingBadges.forEach(badge => badge.remove());
+    // Clear ALL content except theme toggle
+    container.innerHTML = '';
+    if (themeToggle) {
+      container.appendChild(themeToggle);
+    }
     
     // Determine how many badges to show
     const badgesToShow = badgeContainerExpanded ? allBadges : allBadges.slice(0, maxVisibleBadges);
