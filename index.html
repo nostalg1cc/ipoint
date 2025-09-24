@@ -1671,24 +1671,114 @@
   };
 
   const GREETINGS = {
-    en:{morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening', night:'Good night'},
-    de:{morning:'Guten Morgen', afternoon:'Guten Tag', evening:'Guten Abend', night:'Gute Nacht'},
-    fr:{morning:'Bonjour', afternoon:'Bonjour', evening:'Bonsoir', night:'Bonne nuit'},
-    it:{morning:'Buongiorno', afternoon:'Buon pomeriggio', evening:'Buonasera', night:'Buonanotte'},
-    es:{morning:'Buenos días', afternoon:'Buenas tardes', evening:'Buenas tardes', night:'Buenas noches'},
-    pt:{morning:'Bom dia', afternoon:'Boa tarde', evening:'Boa noite', night:'Boa noite'},
-    nl:{morning:'Goedemorgen', afternoon:'Goedemiddag', evening:'Goedenavond', night:'Goedenacht'},
-    sv:{morning:'God morgon', afternoon:'God eftermiddag', evening:'God kväll', night:'God natt'},
-    no:{morning:'God morgen', afternoon:'God ettermiddag', evening:'God kveld', night:'God natt'},
-    da:{morning:'Godmorgen', afternoon:'God eftermiddag', evening:'Godaften', night:'Godnat'},
-    fi:{morning:'Hyvää huomenta', afternoon:'Hyvää iltapäivää', evening:'Hyvää iltaa', night:'Hyvää yötä'},
-    pl:{morning:'Dzień dobry', afternoon:'Dzień dobry', evening:'Dobry wieczór', night:'Dobranoc'},
-    ru:{morning:'Доброе утро', afternoon:'Добрый день', evening:'Добрый вечер', night:'Спокойной ночи'},
-    tr:{morning:'Günaydın', afternoon:'Tünaydın', evening:'İyi akşamlar', night:'İyi geceler'},
-    ja:{morning:'おはようございます', afternoon:'こんにちは', evening:'こんばんは', night:'おやすみなさい'},
-    zh:{morning:'早上好', afternoon:'下午好', evening:'晚上好', night:'晚安'},
-    ar:{morning:'صباح الخير', afternoon:'مساء الخير', evening:'مساء الخير', night:'تصبح على خير'},
-    hi:{morning:'सुप्रभात', afternoon:'नमस्ते', evening:'शुभ संध्या', night:'शुभ रात्रि'}
+    en:{
+      morning:['Good morning', 'Morning!', 'Rise and shine!', 'Top of the morning!', 'Good day ahead!'],
+      afternoon:['Good afternoon', 'Afternoon!', 'Hope you\'re having a great day!', 'Good day!'],
+      evening:['Good evening', 'Evening!', 'Hope you had a wonderful day!', 'Good night ahead!'],
+      night:['Good night', 'Sweet dreams!', 'Sleep well!', 'Have a peaceful night!']
+    },
+    de:{
+      morning:['Guten Morgen', 'Moin!', 'Guten Tag', 'Hallo!', 'Schönen guten Morgen!'],
+      afternoon:['Guten Tag', 'Hallo!', 'Guten Nachmittag', 'Schönen Tag noch!'],
+      evening:['Guten Abend', 'Hallo!', 'Schönen Abend!', 'Gute Nacht!'],
+      night:['Gute Nacht', 'Schlaf gut!', 'Träum schön!', 'Bis morgen!']
+    },
+    fr:{
+      morning:['Bonjour', 'Salut!', 'Bonne journée!', 'Bon matin!'],
+      afternoon:['Bonjour', 'Salut!', 'Bonne après-midi!', 'Bonne journée!'],
+      evening:['Bonsoir', 'Salut!', 'Bonne soirée!', 'Bonne nuit!'],
+      night:['Bonne nuit', 'Dors bien!', 'Fais de beaux rêves!', 'À demain!']
+    },
+    it:{
+      morning:['Buongiorno', 'Ciao!', 'Buona giornata!', 'Buon mattino!'],
+      afternoon:['Buongiorno', 'Ciao!', 'Buon pomeriggio!', 'Buona giornata!'],
+      evening:['Buonasera', 'Ciao!', 'Buona serata!', 'Buona notte!'],
+      night:['Buonanotte', 'Sogni d\'oro!', 'Dormi bene!', 'A domani!']
+    },
+    es:{
+      morning:['Buenos días', '¡Hola!', '¡Buen día!', '¡Que tengas un buen día!'],
+      afternoon:['Buenas tardes', '¡Hola!', '¡Buenas tardes!', '¡Que tengas una buena tarde!'],
+      evening:['Buenas tardes', '¡Hola!', '¡Buenas noches!', '¡Que tengas una buena noche!'],
+      night:['Buenas noches', '¡Que descanses!', '¡Dulces sueños!', '¡Hasta mañana!']
+    },
+    pt:{
+      morning:['Bom dia', 'Olá!', 'Boa manhã!', 'Tenha um ótimo dia!'],
+      afternoon:['Boa tarde', 'Olá!', 'Tenha uma boa tarde!', 'Bom dia!'],
+      evening:['Boa noite', 'Olá!', 'Tenha uma boa noite!', 'Boa noite!'],
+      night:['Boa noite', 'Durma bem!', 'Sonhos doces!', 'Até amanhã!']
+    },
+    nl:{
+      morning:['Goedemorgen', 'Hallo!', 'Goede dag!', 'Fijne dag!'],
+      afternoon:['Goedemiddag', 'Hallo!', 'Goede dag!', 'Fijne middag!'],
+      evening:['Goedenavond', 'Hallo!', 'Goede avond!', 'Fijne avond!'],
+      night:['Goedenacht', 'Slaap lekker!', 'Droom zacht!', 'Tot morgen!']
+    },
+    sv:{
+      morning:['God morgon', 'Hej!', 'God dag!', 'Ha en fin dag!'],
+      afternoon:['God eftermiddag', 'Hej!', 'God dag!', 'Ha en fin eftermiddag!'],
+      evening:['God kväll', 'Hej!', 'Ha en fin kväll!', 'God natt!'],
+      night:['God natt', 'Sov gott!', 'Dröm sött!', 'Vi ses imorgon!']
+    },
+    no:{
+      morning:['God morgen', 'Hei!', 'God dag!', 'Ha en fin dag!'],
+      afternoon:['God ettermiddag', 'Hei!', 'God dag!', 'Ha en fin ettermiddag!'],
+      evening:['God kveld', 'Hei!', 'Ha en fin kveld!', 'God natt!'],
+      night:['God natt', 'Sov godt!', 'Drøm søtt!', 'Vi sees i morgen!']
+    },
+    da:{
+      morning:['Godmorgen', 'Hej!', 'God dag!', 'Ha\' en god dag!'],
+      afternoon:['God eftermiddag', 'Hej!', 'God dag!', 'Ha\' en god eftermiddag!'],
+      evening:['Godaften', 'Hej!', 'Ha\' en god aften!', 'Godnat!'],
+      night:['Godnat', 'Sov godt!', 'Drøm sødt!', 'Vi ses i morgen!']
+    },
+    fi:{
+      morning:['Hyvää huomenta', 'Hei!', 'Hyvää päivää!', 'Mukavaa päivää!'],
+      afternoon:['Hyvää iltapäivää', 'Hei!', 'Hyvää päivää!', 'Mukavaa iltapäivää!'],
+      evening:['Hyvää iltaa', 'Hei!', 'Mukavaa iltaa!', 'Hyvää yötä!'],
+      night:['Hyvää yötä', 'Nuku hyvin!', 'Uni nukkuu!', 'Nähdään huomenna!']
+    },
+    pl:{
+      morning:['Dzień dobry', 'Cześć!', 'Miłego dnia!', 'Dobrego ranka!'],
+      afternoon:['Dzień dobry', 'Cześć!', 'Miłego popołudnia!', 'Miłego dnia!'],
+      evening:['Dobry wieczór', 'Cześć!', 'Miłego wieczoru!', 'Dobranoc!'],
+      night:['Dobranoc', 'Śpij dobrze!', 'Słodkich snów!', 'Do zobaczenia jutro!']
+    },
+    ru:{
+      morning:['Доброе утро', 'Привет!', 'Хорошего дня!', 'Доброго утра!'],
+      afternoon:['Добрый день', 'Привет!', 'Хорошего дня!', 'Доброго дня!'],
+      evening:['Добрый вечер', 'Привет!', 'Хорошего вечера!', 'Спокойной ночи!'],
+      night:['Спокойной ночи', 'Спокойного сна!', 'Сладких снов!', 'До завтра!']
+    },
+    tr:{
+      morning:['Günaydın', 'Merhaba!', 'İyi günler!', 'Güzel bir gün!'],
+      afternoon:['İyi günler', 'Merhaba!', 'İyi öğleden sonra!', 'Güzel bir gün!'],
+      evening:['İyi akşamlar', 'Merhaba!', 'Güzel bir akşam!', 'İyi geceler!'],
+      night:['İyi geceler', 'İyi uykular!', 'Tatlı rüyalar!', 'Yarın görüşürüz!']
+    },
+    ja:{
+      morning:['おはようございます', 'おはよう!', '今日も一日お疲れ様!', '良い一日を!'],
+      afternoon:['こんにちは', 'お疲れ様!', '良い午後を!', '今日もお疲れ様!'],
+      evening:['こんばんは', 'お疲れ様!', '良い夜を!', 'おやすみなさい!'],
+      night:['おやすみなさい', 'おやすみ!', '良い夢を!', 'また明日!']
+    },
+    zh:{
+      morning:['早上好', '你好!', '新的一天快乐!', '祝你有美好的一天!'],
+      afternoon:['下午好', '你好!', '下午愉快!', '祝你有美好的一天!'],
+      evening:['晚上好', '你好!', '晚上愉快!', '晚安!'],
+      night:['晚安', '睡个好觉!', '好梦!', '明天见!']
+    },
+    ar:{
+      morning:['صباح الخير', 'مرحبا!', 'صباح جميل!', 'أتمنى لك يوماً سعيداً!'],
+      afternoon:['مساء الخير', 'مرحبا!', 'مساء جميل!', 'أتمنى لك مساءً سعيداً!'],
+      evening:['مساء الخير', 'مرحبا!', 'مساء جميل!', 'تصبح على خير!'],
+      night:['تصبح على خير', 'نوماً هنيئاً!', 'أحلام سعيدة!', 'أراك غداً!']
+    },
+    hi:{
+      morning:['सुप्रभात', 'नमस्ते!', 'शुभ दिन!', 'आपका दिन शुभ हो!'],
+      afternoon:['नमस्ते', 'नमस्कार!', 'शुभ दोपहर!', 'आपका दिन शुभ हो!'],
+      evening:['शुभ संध्या', 'नमस्ते!', 'शुभ शाम!', 'शुभ रात्रि!'],
+      night:['शुभ रात्रि', 'सुखद निद्रा!', 'सुंदर सपने!', 'कल मिलते हैं!']
+    }
   };
 
   function pickLang(data){
@@ -1716,7 +1806,15 @@
       const part = (hour < 5) ? 'night' : (hour < 12) ? 'morning' : (hour < 18) ? 'afternoon' : 'evening';
       const lang = pickLang(data);
       const g = GREETINGS[lang] || GREETINGS.en;
-      return g[part] || GREETINGS.en[part];
+      const greetings = g[part] || GREETINGS.en[part];
+      
+      // If greetings is an array, randomly select one
+      if (Array.isArray(greetings)) {
+        return greetings[Math.floor(Math.random() * greetings.length)];
+      }
+      
+      // Fallback for old format (single string)
+      return greetings;
     } catch { return 'Hello'; }
   }
 
