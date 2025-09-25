@@ -92,7 +92,6 @@
       100% { transform: rotate(1deg); }
     }
     
-    /* Removed remove button styles - no container removal */
     
     /* Edit mode styles */
     .grid.edit-mode .kv {
@@ -557,7 +556,7 @@
     
     /* Mobile responsive grid - always 2 columns on mobile */
     @media (max-width: 768px) {
-      .grid{grid-template-columns:repeat(2,1fr);margin:8px;gap:8px}
+      .grid{margin:8px;gap:8px}
     }
 
     .kv::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:var(--kv-border);
@@ -828,16 +827,7 @@
     }
 
     /* Mini map in the card */
-    #miniMap{
-      height:160px;
-      width:100%;
-      border-radius:10px;
-      overflow:hidden;
-      outline:0px solid var(--line);
-      background:var(--bg);
-      transition:background 0.3s ease, height 0.3s ease;
-      display:block;
-    }
+    #miniMap{height:160px;border-radius:10px;overflow:hidden;outline:0px solid var(--line);background:var(--bg);transition:background 0.3s ease}
     @media (min-width: 900px){ #miniMap{height:200px;} }
     
     /* Mobile responsive mini map */
@@ -849,13 +839,6 @@
       #miniMap{height:100px}
     }
     
-    /* Simplified map styles - fixed 2x4 grid */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      gap: 12px;
-    }
 
     /* small style for IPv6 line under IPv4 */
     .ip-multi { display:flex; flex-direction:column; gap:4px; }
@@ -1152,7 +1135,7 @@
   let   SORT = { key: 'date', dir: 'desc' };
 
   // Customization variables
-  const APP_VERSION = '2.11.0';
+  const APP_VERSION = '2.12.0';
   let dragDropEnabled = false;
   let customAccentColor = '#7aa2ff';
   let currentTheme = 'dark';
@@ -1647,12 +1630,6 @@
       grid.appendChild(widget);
     });
     
-    // Set fixed 2x4 grid layout
-    const grid = document.querySelector('.grid');
-    if (grid) {
-      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-      grid.style.gridTemplateRows = 'repeat(2, 1fr)';
-    }
   }
 
   function resetWidgetOrder() {
@@ -1775,10 +1752,6 @@
     }
   }
 
-  // Widget Management Functions
-  // Removed addRemoveButtons and removeRemoveButtons functions - no container removal
-
-  // Removed removeWidget function - no container removal
 
   function getWidgetType(widget) {
     const keyElement = widget.querySelector('.k');
@@ -1796,22 +1769,6 @@
     return null;
   }
 
-  // Removed redistributeSpace function - using fixed 2x4 grid
-  
-  // Helper function to reinitialize map
-  function reinitializeMap() {
-    const mapElement = document.querySelector('#miniMap');
-    if (mapElement && window.mini) {
-      setTimeout(() => {
-        try {
-          window.mini.invalidateSize();
-          console.log('IPoint: Map reinitialized');
-        } catch (error) {
-          console.warn('IPoint: Error reinitializing map:', error);
-        }
-      }, 150);
-    }
-  }
   
   // Update footer version from JavaScript
   function updateFooterVersion() {
@@ -1820,27 +1777,7 @@
       versionText.textContent = `IPoint v${APP_VERSION} - Customizable Dashboard & Themes`;
     }
   }
-  
-  // Set up resize observer for map container
-  function setupMapResizeObserver() {
-    const mapContainer = document.querySelector('.kv:has(#miniMap)');
-    if (mapContainer && window.ResizeObserver) {
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (let entry of entries) {
-          if (entry.target === mapContainer) {
-            console.log('IPoint: Map container resized, reinitializing map');
-            reinitializeMap();
-          }
-        }
-      });
-      resizeObserver.observe(mapContainer);
-      console.log('IPoint: Map resize observer set up');
-    } else {
-      console.warn('IPoint: ResizeObserver not available or map container not found');
-    }
-  }
 
-  // Removed reAddWidget function - no container removal
 
   function saveWidgetSettings() {
     const settings = {
@@ -1853,7 +1790,6 @@
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 
-  // Removed showReAddWidgets function - no container removal
 
   const $ = (id) => document.getElementById(id);
   const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
@@ -2811,9 +2747,6 @@
       mini.setView([lat,lon],16); // ultra zoom
       L.circleMarker([lat,lon],{radius:5,color:'#ffffff80',fillColor:'#ffffffcc',fillOpacity:0.85,weight:1}).addTo(mini);
       setTimeout(()=>mini.invalidateSize(), 0);
-      
-      // Set up resize observer for map container
-      setupMapResizeObserver();
     }catch(_){/* noop */}
   }
 
