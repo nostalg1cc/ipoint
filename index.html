@@ -81,59 +81,6 @@
       border: 2px dashed var(--muted);
     }
     
-    /* iOS-style wiggle animation */
-    .kv.wiggle {
-      animation: wiggle 0.3s ease-in-out infinite alternate;
-      cursor: grabbing;
-    }
-    
-    @keyframes wiggle {
-      0% { transform: rotate(-1deg); }
-      100% { transform: rotate(1deg); }
-    }
-    
-    
-    /* Edit mode styles */
-    .grid.edit-mode .kv {
-      cursor: grab;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    .grid.edit-mode .kv:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    .grid.edit-mode .kv.wiggle {
-      transform: none;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      cursor: grabbing;
-    }
-    
-    /* Prevent text selection during drag */
-    .kv.dragging {
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-    
-    /* Mobile touch improvements */
-    @media (max-width: 768px) {
-      .grid.edit-mode .kv {
-        touch-action: none;
-      }
-      
-      .kv.wiggle {
-        touch-action: none;
-      }
-    }
-    
     /* Settings Popup Styles */
     .settings-popup {
       position: fixed;
@@ -556,7 +503,7 @@
     
     /* Mobile responsive grid - always 2 columns on mobile */
     @media (max-width: 768px) {
-      .grid{margin:8px;gap:8px}
+      .grid{grid-template-columns:repeat(2,1fr);margin:8px;gap:8px}
     }
 
     .kv::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:var(--kv-border);
@@ -838,7 +785,6 @@
     @media (max-width: 480px) {
       #miniMap{height:100px}
     }
-    
 
     /* small style for IPv6 line under IPv4 */
     .ip-multi { display:flex; flex-direction:column; gap:4px; }
@@ -1047,10 +993,10 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div id="versionText">IPoint v2.10.0 - Customizable Dashboard & Themes</div>
+    <div>IPoint v2.7.0 - Customizable Dashboard & Themes</div>
     <div class="version-memo">
       <!-- AI Memo: Added drag-and-drop widgets, custom themes, and settings popup -->
-      <!-- Last updated: Fixed map container filling and equal widget sizing -->
+      <!-- Last updated: Advanced UI/UX with customization options -->
     </div>
     <div style="margin-top: 8px;">
       <button onclick="openSettings()" style="background: var(--button-bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; color: var(--text); font-size: 11px; cursor: pointer; transition: all 0.2s ease;">
@@ -1095,7 +1041,7 @@
           </div>
           <div class="settings-row">
             <div class="settings-label">Reset Widget Order</div>
-            <button class="settings-button" onclick="resetWidgetOrder()">Reset to Default</button>
+            <button class="settings-button" onclick="resetWidgetOrder()">Reset</button>
           </div>
         </div>
       </div>
@@ -1135,17 +1081,12 @@
   let   SORT = { key: 'date', dir: 'desc' };
 
   // Customization variables
-  const APP_VERSION = '2.12.0';
   let dragDropEnabled = false;
   let customAccentColor = '#7aa2ff';
   let currentTheme = 'dark';
   let widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
-  // Removed removedWidgets - no container removal
   let draggedElement = null;
   let dragPlaceholder = null;
-  let editMode = false;
-  let holdTimer = null;
-  let wiggleTimeout = null;
 
   // Kill-switch variables
   let killSwitchActive = false;
@@ -1171,10 +1112,10 @@
         const settings = JSON.parse(saved);
         console.log('IPoint: Loaded settings:', settings);
         
-      dragDropEnabled = settings.dragDropEnabled || false;
-      customAccentColor = settings.customAccentColor || '#7aa2ff';
-      currentTheme = settings.currentTheme || 'dark';
-      widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+        dragDropEnabled = settings.dragDropEnabled || false;
+        customAccentColor = settings.customAccentColor || '#7aa2ff';
+        currentTheme = settings.currentTheme || 'dark';
+        widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
         
         console.log('IPoint: Applying settings - dragDropEnabled:', dragDropEnabled, 'customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
         
@@ -1220,8 +1161,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
-      removedWidgets,
-      version: APP_VERSION
+      version: '2.7.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     closeSettings();
@@ -1233,8 +1173,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
-      removedWidgets,
-      version: APP_VERSION,
+      version: '2.7.0',
       exportDate: new Date().toISOString()
     };
     
@@ -1260,7 +1199,7 @@
       try {
         const settings = JSON.parse(e.target.result);
         
-        if (settings.version && settings.version.startsWith(APP_VERSION.split('.')[0] + '.' + APP_VERSION.split('.')[1])) {
+        if (settings.version && settings.version.startsWith('2.7')) {
           dragDropEnabled = settings.dragDropEnabled || false;
           customAccentColor = settings.customAccentColor || '#7aa2ff';
           currentTheme = settings.currentTheme || 'dark';
@@ -1379,41 +1318,20 @@
     if (dragDropEnabled) {
       grid.classList.add('draggable');
       attachDragDropListeners();
-      
-      // Make sure all widgets are non-draggable by default
-      const widgets = grid.querySelectorAll('.kv');
-      widgets.forEach(widget => {
-        widget.draggable = false;
-      });
     } else {
       grid.classList.remove('draggable');
       removeDragDropListeners();
-      exitEditMode();
     }
   }
 
-  // Simplified Drag and Drop Functions
+  // Drag and Drop Functions
   function attachDragDropListeners() {
     const grid = document.querySelector('.grid');
     if (!grid) return;
 
     const widgets = grid.querySelectorAll('.kv');
     widgets.forEach(widget => {
-      // Remove existing listeners
-      widget.removeEventListener('mousedown', handleMouseDown);
-      widget.removeEventListener('touchstart', handleTouchStart);
-      widget.removeEventListener('touchend', handleTouchEnd);
-      widget.removeEventListener('touchmove', handleTouchMove);
-      widget.removeEventListener('dragstart', handleDragStart);
-      widget.removeEventListener('dragend', handleDragEnd);
-      widget.removeEventListener('dragover', handleDragOver);
-      widget.removeEventListener('drop', handleDrop);
-      
-      // Add simplified listeners
-      widget.addEventListener('mousedown', handleMouseDown);
-      widget.addEventListener('touchstart', handleTouchStart, { passive: false });
-      widget.addEventListener('touchend', handleTouchEnd);
-      widget.addEventListener('touchmove', handleTouchMove, { passive: false });
+      widget.draggable = true;
       widget.addEventListener('dragstart', handleDragStart);
       widget.addEventListener('dragend', handleDragEnd);
       widget.addEventListener('dragover', handleDragOver);
@@ -1427,10 +1345,7 @@
 
     const widgets = grid.querySelectorAll('.kv');
     widgets.forEach(widget => {
-      widget.removeEventListener('mousedown', handleMouseDown);
-      widget.removeEventListener('touchstart', handleTouchStart);
-      widget.removeEventListener('touchend', handleTouchEnd);
-      widget.removeEventListener('touchmove', handleTouchMove);
+      widget.draggable = false;
       widget.removeEventListener('dragstart', handleDragStart);
       widget.removeEventListener('dragend', handleDragEnd);
       widget.removeEventListener('dragover', handleDragOver);
@@ -1438,64 +1353,16 @@
     });
   }
 
-  // Simplified event handlers
-  function handleMouseDown(e) {
-    if (!dragDropEnabled) return;
-    
-    const widget = e.target.closest('.kv');
-    if (!widget) return;
-    
-    // If not in edit mode, start hold timer
-    if (!editMode) {
-      e.preventDefault();
-      holdTimer = setTimeout(() => {
-        enterEditMode();
-        startWiggle(widget);
-      }, 1000); // 1 second hold to enter edit mode
-    }
-  }
-
-  function handleTouchStart(e) {
-    if (!dragDropEnabled) return;
-    
-    const widget = e.target.closest('.kv');
-    if (!widget) return;
-    
-    // If not in edit mode, start hold timer
-    if (!editMode) {
-      e.preventDefault();
-      holdTimer = setTimeout(() => {
-        enterEditMode();
-        startWiggle(widget);
-      }, 1000); // 1 second hold to enter edit mode
-    }
-  }
-
-  function handleTouchEnd(e) {
-    // Clear hold timer if touch ends before 1 second
-    if (holdTimer) {
-      clearTimeout(holdTimer);
-      holdTimer = null;
-    }
-  }
-
-  function handleTouchMove(e) {
-    // Prevent scrolling during touch move in edit mode
-    if (editMode) {
-      e.preventDefault();
-    }
-  }
-
   function handleDragStart(e) {
-    if (!dragDropEnabled || !editMode) {
-      e.preventDefault();
-      return;
-    }
+    if (!dragDropEnabled) return;
     
-    draggedElement = e.target.closest('.kv');
-    if (!draggedElement) return;
-    
+    draggedElement = e.target;
     draggedElement.classList.add('dragging');
+    
+    // Create placeholder
+    dragPlaceholder = document.createElement('div');
+    dragPlaceholder.className = 'kv drag-placeholder';
+    dragPlaceholder.style.height = draggedElement.offsetHeight + 'px';
     
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', draggedElement.outerHTML);
@@ -1504,11 +1371,14 @@
   function handleDragEnd(e) {
     if (!dragDropEnabled) return;
     
-    if (draggedElement) {
-      draggedElement.classList.remove('dragging');
+    draggedElement.classList.remove('dragging');
+    
+    if (dragPlaceholder && dragPlaceholder.parentNode) {
+      dragPlaceholder.parentNode.removeChild(dragPlaceholder);
     }
     
     draggedElement = null;
+    dragPlaceholder = null;
   }
 
   function handleDragOver(e) {
@@ -1543,9 +1413,8 @@
         grid.insertBefore(draggedElement, target);
       }
       
-      // Update widget order and save immediately
+      // Update widget order
       updateWidgetOrder();
-      console.log('IPoint: Widget order updated and saved');
     }
   }
 
@@ -1576,8 +1445,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
-      removedWidgets,
-      version: APP_VERSION
+      version: '2.7.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
@@ -1595,32 +1463,30 @@
     // Create a map of widgets by type
     const widgetMap = {};
     widgets.forEach(widget => {
-      const widgetType = getWidgetType(widget);
-      if (widgetType) {
-        widgetMap[widgetType] = widget;
+      const keyElement = widget.querySelector('.k');
+      if (keyElement) {
+        const text = keyElement.textContent.toLowerCase();
+        if (text.includes('country')) widgetMap.country = widget;
+        else if (text.includes('region') || text.includes('city')) widgetMap.place = widget;
+        else if (text.includes('isp')) widgetMap.isp = widget;
+        else if (text.includes('asn')) widgetMap.asn = widget;
+        else if (text.includes('ip')) widgetMap.ip = widget;
+        else if (text.includes('timezone')) widgetMap.tz = widget;
+        else if (text.includes('user agent')) widgetMap.ua = widget;
+        else if (widget.querySelector('#miniMap')) widgetMap.map = widget;
       }
     });
     
-    // Reorder based on saved order, excluding removed widgets
+    // Reorder based on saved order
     widgetOrder.forEach(type => {
-      if (widgetMap[type] && !removedWidgets.includes(type)) {
-        orderedWidgets.push(widgetMap[type]);
-        // Show widget if it was hidden
-        widgetMap[type].style.display = '';
-      }
-    });
-    
-    // Hide removed widgets
-    removedWidgets.forEach(type => {
       if (widgetMap[type]) {
-        widgetMap[type].style.display = 'none';
+        orderedWidgets.push(widgetMap[type]);
       }
     });
     
-    // Add any remaining widgets that aren't in the order
+    // Add any remaining widgets
     widgets.forEach(widget => {
-      const widgetType = getWidgetType(widget);
-      if (widgetType && !widgetOrder.includes(widgetType) && !removedWidgets.includes(widgetType)) {
+      if (!orderedWidgets.includes(widget)) {
         orderedWidgets.push(widget);
       }
     });
@@ -1629,7 +1495,6 @@
     orderedWidgets.forEach(widget => {
       grid.appendChild(widget);
     });
-    
   }
 
   function resetWidgetOrder() {
@@ -1644,7 +1509,6 @@
       customAccentColor = '#7aa2ff';
       currentTheme = 'dark';
       widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
-      removedWidgets = [];
       
       // Reset UI
       updateDragDropUI();
@@ -1655,211 +1519,10 @@
     }
   }
 
-  // iOS-style Edit Mode Functions
-  function enterEditMode() {
-    if (editMode) return;
-    
-    editMode = true;
-    const grid = document.querySelector('.grid');
-    if (grid) {
-      grid.classList.add('edit-mode');
-    }
-    
-    // Add click outside to exit edit mode
-    document.addEventListener('click', handleClickOutside);
-    
-    console.log('IPoint: Entered edit mode');
-  }
-
-  function exitEditMode() {
-    if (!editMode) return;
-    
-    editMode = false;
-    const grid = document.querySelector('.grid');
-    if (grid) {
-      grid.classList.remove('edit-mode');
-    }
-    
-    // Stop ALL widgets from wiggling and make them non-draggable (like iOS)
-    const widgets = document.querySelectorAll('.kv.wiggle');
-    widgets.forEach(widget => {
-      widget.classList.remove('wiggle');
-      widget.draggable = false; // Make them non-draggable!
-    });
-    
-    // Also make sure ALL widgets are non-draggable
-    const allWidgets = document.querySelectorAll('.kv');
-    allWidgets.forEach(widget => {
-      widget.draggable = false;
-    });
-    
-    // No delete buttons to remove
-    
-    // Clear wiggle timeout
-    if (wiggleTimeout) {
-      clearTimeout(wiggleTimeout);
-      wiggleTimeout = null;
-    }
-    
-    // Remove click outside listener
-    document.removeEventListener('click', handleClickOutside);
-    
-    console.log('IPoint: Exited edit mode - all widgets stopped wiggling');
-  }
-
-  function handleClickOutside(e) {
-    if (!editMode) return;
-    
-    const grid = document.querySelector('.grid');
-    if (grid && !grid.contains(e.target)) {
-      exitEditMode();
-    }
-  }
-
-  function startWiggle(widget) {
-    if (!widget) return;
-    
-    // Make ALL widgets wiggle (like iOS)
-    const grid = document.querySelector('.grid');
-    if (grid) {
-      const allWidgets = grid.querySelectorAll('.kv');
-      allWidgets.forEach(w => {
-        w.classList.add('wiggle');
-        w.draggable = true; // Make them draggable!
-      });
-    }
-    
-    // Clear any existing timeout
-    if (wiggleTimeout) {
-      clearTimeout(wiggleTimeout);
-    }
-    
-    // Auto-exit wiggle after 10 seconds of inactivity
-    wiggleTimeout = setTimeout(() => {
-      exitEditMode();
-    }, 10000);
-    
-    console.log('IPoint: All widgets now wiggling and draggable (iOS style)');
-  }
-
-  function stopWiggle(widget) {
-    if (!widget) return;
-    
-    widget.classList.remove('wiggle');
-    if (wiggleTimeout) {
-      clearTimeout(wiggleTimeout);
-      wiggleTimeout = null;
-    }
-  }
-
-
-  function getWidgetType(widget) {
-    const keyElement = widget.querySelector('.k');
-    if (keyElement) {
-      const text = keyElement.textContent.toLowerCase();
-      if (text.includes('country')) return 'country';
-      if (text.includes('region') || text.includes('city')) return 'place';
-      if (text.includes('isp')) return 'isp';
-      if (text.includes('asn')) return 'asn';
-      if (text.includes('ip')) return 'ip';
-      if (text.includes('timezone')) return 'tz';
-      if (text.includes('user agent')) return 'ua';
-      if (widget.querySelector('#miniMap')) return 'map';
-    }
-    return null;
-  }
-
-  
-  // Update footer version from JavaScript
-  function updateFooterVersion() {
-    const versionText = document.getElementById('versionText');
-    if (versionText) {
-      versionText.textContent = `IPoint v${APP_VERSION} - Customizable Dashboard & Themes`;
-    }
-  }
-
-  // Essential utility functions
   const $ = (id) => document.getElementById(id);
   const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
   const fmtDate = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit'}).format(d);
   const fmtTime = (d) => new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
-
-  function saveWidgetSettings() {
-    const settings = {
-      dragDropEnabled,
-      customAccentColor,
-      currentTheme,
-      widgetOrder,
-      version: APP_VERSION
-    };
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }
-
-  // Theme functions
-  function initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
-  }
-
-  function setTheme(theme) {
-    currentTheme = theme;
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-  }
-
-  function changeThemeMode() {
-    const themes = ['light', 'dark', 'oled'];
-    const currentIndex = themes.indexOf(currentTheme);
-    const nextIndex = (currentIndex + 1) % themes.length;
-    const newTheme = themes[nextIndex];
-    setTheme(newTheme);
-    loadSettingsToUI();
-  }
-
-  function loadSettingsToUI() {
-    // Update theme toggle
-    const themeIcon = document.getElementById('themeIcon');
-    const themeText = document.getElementById('themeText');
-    if (themeIcon && themeText) {
-      const icons = { light: '☀️', dark: '🌙', oled: '⚫' };
-      const names = { light: 'Light', dark: 'Dark', oled: 'OLED' };
-      themeIcon.textContent = icons[currentTheme] || '🌙';
-      themeText.textContent = names[currentTheme] || 'Dark';
-    }
-  }
-
-  function updateAccentColor(color) {
-    customAccentColor = color;
-    document.documentElement.style.setProperty('--accent', color);
-    
-    // Convert hex to HSL for tinting
-    const hex = color.replace('#', '');
-    const r = parseInt(hex.substr(0, 2), 16) / 255;
-    const g = parseInt(hex.substr(2, 2), 16) / 255;
-    const b = parseInt(hex.substr(4, 2), 16) / 255;
-    
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    let h, s, l = (max + min) / 2;
-    
-    if (max === min) {
-      h = s = 0;
-    } else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
-    }
-    
-    document.documentElement.style.setProperty('--tint-hue', Math.round(h * 360));
-    document.documentElement.style.setProperty('--tint-saturation', Math.round(s * 100) + '%');
-    document.documentElement.style.setProperty('--tint-lightness', Math.round(l * 100) + '%');
-    document.documentElement.style.setProperty('--tint-alpha', '0.1');
-  }
   
   // Calculate relative time (x minutes/hours ago)
   function getRelativeTime(timestamp) {
@@ -3149,70 +2812,6 @@
     }
   }
 
-  async function init(){
-    console.log('IPoint: Starting initialization...');
-    
-    // Initialize theme first
-    initTheme();
-    
-    // Update footer version
-    updateFooterVersion();
-    
-    const dev = deviceInfo();
-    setKV('ua', dev.ua);
-
-    // Try both providers with normalization
-    try{
-      console.log('IPoint: Fetching IP data...');
-      const data = await getIpData();
-      console.log('IPoint: IP data received:', data);
-
-      // change badges vs last
-      const hist = getHistory();
-      const last = hist[hist.length - 1];
-      diffBadges(last, data);
-
-      fillUI(data);
-
-      // Save visit (normal entry, not security alert)
-      appendHistory({
-        timestamp: Date.now(),
-        ip: data.ip,
-        country: data.country,
-        region: data.region,
-        city: data.city,
-        isp: data.connection?.isp || data.connection?.org,
-        asn: data.connection?.asn,
-        timezone: data.timezone
-      });
-
-      // Render history
-      renderHistory();
-      
-      // Start kill-switch monitoring
-      startKillSwitch(data.ip);
-      
-      // Load customization settings after everything is set up
-      setTimeout(() => {
-        loadSettings();
-      }, 100);
-      
-    }catch(err){
-      console.error('IPoint: Error during initialization:', err);
-      // Never reference an undefined `data` here.
-      $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
-      $('greetSub').textContent = buildGreetSub({ timezone: 'UTC' });
-      $('flag').innerHTML = '';
-      // keep existing history visible
-      renderHistory();
-      
-      // Load customization settings even if data loading failed
-      setTimeout(() => {
-        loadSettings();
-      }, 100);
-    }
-  }
-
   function fillUI(data){
     $('greeting').textContent = safeBuildGreeting(data);
     $('greetSub').textContent = buildGreetSub(data);
@@ -3258,9 +2857,6 @@
     
     // Initialize theme first
     initTheme();
-    
-    // Update footer version
-    updateFooterVersion();
     
     const dev = deviceInfo();
     setKV('ua', dev.ua);
@@ -3468,90 +3064,6 @@
   window.importSettings = importSettings;
   window.saveSettings = saveSettings;
   window.resetAllSettings = resetAllSettings;
-  window.enterEditMode = enterEditMode;
-  window.exitEditMode = exitEditMode;
-
-  // Simple working version
-  console.log('IPoint: Script loaded');
-  
-  // Essential functions
-  function deviceInfo() { return { ua: navigator.userAgent }; }
-  function getHistory() { try { const saved = localStorage.getItem('ipoint_history'); return saved ? JSON.parse(saved) : []; } catch { return []; } }
-  function diffBadges(last, current) { if (!last) return; }
-  function renderHistory() { const hist = getHistory(); const container = document.getElementById('historyContainer'); if (container) { container.innerHTML = hist.map(entry => `<div class="history-entry"><span>${entry.ip}</span><span>${entry.country}</span><span>${new Date(entry.timestamp).toLocaleString()}</span></div>`).join(''); } }
-  function appendHistory(entry) { const hist = getHistory(); hist.push(entry); if (hist.length > 500) hist.shift(); localStorage.setItem('ipoint_history', JSON.stringify(hist)); }
-  function startKillSwitch(ip) { console.log('Kill switch started for IP:', ip); }
-  function safeBuildGreeting(data) { return `Hello from ${data.country || 'Unknown'}`; }
-  function buildGreetSub(data) { return `Your IP: ${data.ip || 'Unknown'}`; }
-  function renderFlag(countryCode) { const flag = document.getElementById('flag'); if (flag && countryCode) { flag.innerHTML = `🏳️ ${countryCode}`; } }
-  function setFavicon(countryCode) { }
-  function truncateText(text, maxLength) { if (!text) return ''; return text.length > maxLength ? text.substring(0, maxLength) + '...' : text; }
-  function normalizeFromIpwho(data) { return { ip: data.ip, country: data.country, country_code: data.country_code, region: data.region, city: data.city, timezone: data.timezone, connection: { isp: data.connection?.isp, org: data.connection?.org, asn: data.connection?.asn } }; }
-  function normalizeFromIpapi(data) { return { ip: data.ip, country: data.country_name, country_code: data.country_code, region: data.region, city: data.city, timezone: data.timezone, connection: { isp: data.org, org: data.org, asn: data.asn } }; }
-
-  async function init(){
-    console.log('IPoint: Starting initialization...');
-    
-    // Initialize theme first
-    initTheme();
-    
-    // Update footer version
-    updateFooterVersion();
-    
-    const dev = deviceInfo();
-    setKV('ua', dev.ua);
-
-    // Try both providers with normalization
-    try{
-      console.log('IPoint: Fetching IP data...');
-      const data = await getIpData();
-      console.log('IPoint: IP data received:', data);
-
-      // change badges vs last
-      const hist = getHistory();
-      const last = hist[hist.length - 1];
-      diffBadges(last, data);
-
-      fillUI(data);
-
-      // Save visit (normal entry, not security alert)
-      appendHistory({
-        timestamp: Date.now(),
-        ip: data.ip,
-        country: data.country,
-        region: data.region,
-        city: data.city,
-        isp: data.connection?.isp || data.connection?.org,
-        asn: data.connection?.asn,
-        timezone: data.timezone
-      });
-
-      // Render history
-      renderHistory();
-      
-      // Start kill-switch monitoring
-      startKillSwitch(data.ip);
-      
-      // Load customization settings after everything is set up
-      setTimeout(() => {
-        loadSettings();
-      }, 100);
-      
-    }catch(err){
-      console.error('IPoint: Error during initialization:', err);
-      // Never reference an undefined `data` here.
-      $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
-      $('greetSub').textContent = buildGreetSub({ timezone: 'UTC' });
-      $('flag').innerHTML = '';
-      // keep existing history visible
-      renderHistory();
-      
-      // Load customization settings even if data loading failed
-      setTimeout(() => {
-        loadSettings();
-      }, 100);
-    }
-  }
 
   init();
 </script>
