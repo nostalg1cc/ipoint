@@ -32,8 +32,99 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Immediate theme application to prevent flash -->
+  <script>
+    (function() {
+      try {
+        // Apply theme immediately
+        const savedTheme = localStorage.getItem('ip_theme_preference');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // Apply accent color immediately
+        const savedSettings = localStorage.getItem('ip_settings_v1');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          if (settings.customAccentColor) {
+            document.documentElement.style.setProperty('--accent', settings.customAccentColor);
+          }
+        }
+      } catch (e) {
+        // Fallback to dark theme if there's any error
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+
   <style>
-    /* Drag and Drop Styles */
+    /* Theme variables - applied immediately to prevent flash */
+    :root {
+      --bg: #0f1115;
+      --panel: #151923;
+      --text: #e7e9ee;
+      --muted: #a6afbd;
+      --accent: #7aa2ff;
+      --good: #35c48b;
+      --warn: #f5b64d;
+      --bad: #ef6a6a;
+      --line: #232a36;
+      --map-filter: grayscale(100%);
+      --card-bg: rgba(150, 161, 196, 0.062);
+      --card-border: linear-gradient(to bottom right,rgba(108,99,134,.25),rgba(108,99,134,.05));
+      --kv-bg: rgba(150, 161, 196, 0.04);
+      --kv-bg-alt: rgba(150, 161, 196, 0.02);
+      --kv-border: linear-gradient(to bottom right,rgba(108,99,134,.2),rgba(108,99,134,.04));
+      --table-border: rgba(108,99,134,.25);
+      --hover-bg: #ffffff05;
+      --shade-bg: radial-gradient(1200px 800px at 50% 20%, transparent 0%, rgba(15,17,21,0.35) 60%, rgba(15,17,21,0.6) 100%);
+      --badge-bg: #ffffff10;
+      --button-bg: #1a2230;
+      --button-hover: #20293a;
+      --changed-bg: linear-gradient(90deg,#ffb74a12,transparent 80%);
+      --changed-hover: linear-gradient(90deg,#ffb74a1c,transparent 80%);
+      --security-bg: linear-gradient(90deg,#dc262620,transparent 80%);
+      --security-hover: linear-gradient(90deg,#dc262630,transparent 80%);
+      --speedtest-bg: linear-gradient(90deg,#7aa2ff20,transparent 80%);
+      --speedtest-hover: linear-gradient(90deg,#7aa2ff30,transparent 80%);
+      --alternate-bg: rgba(255,255,255,0.02);
+      --alternate-hover: rgba(255,255,255,0.05);
+    }
+
+    /* Light theme */
+    [data-theme="light"] {
+      --bg: #f1f3f6;
+      --panel: #fafbfc;
+      --text: #2d3748;
+      --muted: #718096;
+      --accent: #4299e1;
+      --good: #38a169;
+      --warn: #ed8936;
+      --bad: #e53e3e;
+      --line: #d2d6dc;
+      --map-filter: none;
+      --card-bg: rgba(250, 251, 252, 0.85);
+      --card-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.25), rgba(160, 174, 192, 0.08));
+      --kv-bg: rgba(237, 242, 247, 0.5);
+      --kv-bg-alt: rgba(237, 242, 247, 0.3);
+      --kv-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.2), rgba(160, 174, 192, 0.04));
+      --table-border: rgba(160, 174, 192, 0.1);
+      --hover-bg: rgba(237, 242, 247, 0.4);
+      --shade-bg: radial-gradient(1200px 800px at 50% 20%, transparent 0%, rgba(241, 243, 246, 0.25) 60%, rgba(241, 243, 246, 0.4) 100%);
+      --badge-bg: rgba(160, 174, 192, 0.08);
+      --button-bg: #edf2f7;
+      --button-hover: #e2e8f0;
+      --changed-bg: linear-gradient(90deg, rgba(237, 137, 54, 0.12), transparent 80%);
+      --changed-hover: linear-gradient(90deg, rgba(237, 137, 54, 0.2), transparent 80%);
+      --security-bg: linear-gradient(90deg, rgba(229, 62, 62, 0.12), transparent 80%);
+      --security-hover: linear-gradient(90deg, rgba(229, 62, 62, 0.2), transparent 80%);
+      --speedtest-bg: linear-gradient(90deg, rgba(66, 153, 225, 0.12), transparent 80%);
+      --speedtest-hover: linear-gradient(90deg, rgba(66, 153, 225, 0.2), transparent 80%);
+      --alternate-bg: rgba(0,0,0,0.02);
+      --alternate-hover: rgba(0,0,0,0.05);
+    }
+
+    /* Grid styles */
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -41,9 +132,6 @@
       gap: 10px;
     }
     
-    .grid.dragging {
-      cursor: grabbing;
-    }
     
     .kv {
       position: relative;
@@ -68,24 +156,8 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     
-    .kv.dragging {
-      cursor: grabbing;
-      transform: scale(1.1);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      opacity: 0.9;
-    }
     
-    .kv.drag-over {
-      border: 2px dashed var(--accent);
-      background: var(--accent)10;
-    }
     
-    .kv.drag-placeholder {
-      opacity: 0.5;
-      background: var(--line);
-      border: 2px dashed var(--muted);
-    }
     
     /* Settings Popup Styles */
     .settings-popup {
@@ -419,63 +491,20 @@
       background-color: var(--hover-bg);
     }
     
-    :root{
-      --bg:#0f1115; --panel:#151923; --text:#e7e9ee; --muted:#a6afbd; --accent:#7aa2ff;
-      --good:#35c48b; --warn:#f5b64d; --bad:#ef6a6a; --line:#232a36;
-      --map-filter: grayscale(100%);
-      --card-bg: rgba(150, 161, 196, 0.062);
-      --card-border: linear-gradient(to bottom right,rgba(108,99,134,.25),rgba(108,99,134,.05));
-      --kv-bg: rgba(150, 161, 196, 0.04);
-      --kv-bg-alt: rgba(150, 161, 196, 0.02);
-      --kv-border: linear-gradient(to bottom right,rgba(108,99,134,.2),rgba(108,99,134,.04));
-      --table-border: rgba(108,99,134,.25);
-      --hover-bg: #ffffff05;
-      --shade-bg: radial-gradient(1200px 800px at 50% 20%, transparent 0%, rgba(15,17,21,0.35) 60%, rgba(15,17,21,0.6) 100%);
-      --badge-bg: #ffffff10;
-      --button-bg: #1a2230;
-      --button-hover: #20293a;
-      --changed-bg: linear-gradient(90deg,#ffb74a12,transparent 80%);
-      --changed-hover: linear-gradient(90deg,#ffb74a1c,transparent 80%);
-      --security-bg: linear-gradient(90deg,#dc262620,transparent 80%);
-      --security-hover: linear-gradient(90deg,#dc262630,transparent 80%);
-      --speedtest-bg: linear-gradient(90deg,#7aa2ff20,transparent 80%);
-      --speedtest-hover: linear-gradient(90deg,#7aa2ff30,transparent 80%);
-      --alternate-bg: rgba(255,255,255,0.02);
-      --alternate-hover: rgba(255,255,255,0.05);
-      
-      /* Custom tinting variables */
-      --tint-hue: 220;
-      --tint-saturation: 70%;
-      --tint-lightness: 60%;
-      --tint-alpha: 0.1;
-    }
 
-    [data-theme="light"] {
-      --bg: #f1f3f6; --panel: #fafbfc; --text: #2d3748; --muted: #718096; --accent: #4299e1;
-      --good: #38a169; --warn: #ed8936; --bad: #e53e3e; --line: #d2d6dc;
-      --map-filter: none;
-      --card-bg: rgba(250, 251, 252, 0.85);
-      --card-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.25), rgba(160, 174, 192, 0.08));
-      --kv-bg: rgba(237, 242, 247, 0.5);
-      --kv-bg-alt: rgba(237, 242, 247, 0.3);
-      --kv-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.2), rgba(160, 174, 192, 0.04));
-      --table-border: rgba(160, 174, 192, 0.1);
-      --hover-bg: rgba(237, 242, 247, 0.4);
-      --shade-bg: radial-gradient(1200px 800px at 50% 20%, transparent 0%, rgba(241, 243, 246, 0.25) 60%, rgba(241, 243, 246, 0.4) 100%);
-      --badge-bg: rgba(160, 174, 192, 0.08);
-      --button-bg: #edf2f7;
-      --button-hover: #e2e8f0;
-      --changed-bg: linear-gradient(90deg, rgba(237, 137, 54, 0.12), transparent 80%);
-      --changed-hover: linear-gradient(90deg, rgba(237, 137, 54, 0.2), transparent 80%);
-      --security-bg: linear-gradient(90deg, rgba(229, 62, 62, 0.12), transparent 80%);
-      --security-hover: linear-gradient(90deg, rgba(229, 62, 62, 0.2), transparent 80%);
-      --speedtest-bg: linear-gradient(90deg, rgba(66, 153, 225, 0.12), transparent 80%);
-      --speedtest-hover: linear-gradient(90deg, rgba(66, 153, 225, 0.2), transparent 80%);
-      --alternate-bg: rgba(0,0,0,0.02);
-      --alternate-hover: rgba(0,0,0,0.05);
-    }
 
     html,body{height:100%}
+    
+    /* Sticky footer layout */
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    main {
+      flex: 1;
+    }
     
     /* PWA and Standalone app adjustments */
     @media (display-mode: standalone) {
@@ -768,13 +797,23 @@
     tbody tr.entry-changed{background:var(--changed-bg);}
     tbody tr.entry-changed:hover{background:var(--changed-hover);}
 
-    /* Security alert styling */
-    tbody tr.security-alert{background:var(--security-bg);}
-    tbody tr.security-alert:hover{background:var(--security-hover);}
+    /* Security alert styling - higher specificity to override alternate */
+    tbody tr.security-alert{background:var(--security-bg) !important;}
+    tbody tr.security-alert:hover{background:var(--security-hover) !important;}
+    tbody tr.history-alternate.security-alert{background:var(--security-bg) !important;}
+    tbody tr.history-alternate.security-alert:hover{background:var(--security-hover) !important;}
 
-    /* Speed test styling */
-    tbody tr.speed-test{background:var(--speedtest-bg);}
-    tbody tr.speed-test:hover{background:var(--speedtest-hover);}
+    /* Speed test styling - higher specificity to override alternate */
+    tbody tr.speed-test{background:var(--speedtest-bg) !important;}
+    tbody tr.speed-test:hover{background:var(--speedtest-hover) !important;}
+    tbody tr.history-alternate.speed-test{background:var(--speedtest-bg) !important;}
+    tbody tr.history-alternate.speed-test:hover{background:var(--speedtest-hover) !important;}
+
+    /* IP changed styling - higher specificity to override alternate */
+    tbody tr.ip-changed{background:var(--changed-bg) !important;}
+    tbody tr.ip-changed:hover{background:var(--changed-hover) !important;}
+    tbody tr.history-alternate.ip-changed{background:var(--changed-bg) !important;}
+    tbody tr.history-alternate.ip-changed:hover{background:var(--changed-hover) !important;}
 
     /* Alternating row colors for history entries */
     tbody tr.history-alternate{background:var(--alternate-bg);}
@@ -868,18 +907,61 @@
     /* Version footer */
     .version-footer{
       text-align:center;
-      padding:20px 16px;
+      padding:8px 16px;
       color:var(--muted);
-      font-size:11px;
+      font-size:10px;
       border-top:1px solid var(--line);
-      margin-top:20px;
+      margin-top:auto;
       background:var(--card-bg);
       backdrop-filter:blur(8px) saturate(120%);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      opacity: 0;
+      transform: translateY(100%);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 32px;
+    }
+    
+    .version-footer.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    
+    .version-info {
+      flex: 1;
+      text-align: center;
+    }
+    
+    .footer-actions {
+      position: absolute;
+      right: 16px;
+    }
+    
+    .settings-btn {
+      background: none !important;
+      border: none !important;
+      padding: 4px 8px !important;
+      font-size: 10px !important;
+      color: var(--muted) !important;
+      transition: color 0.2s ease !important;
+    }
+    
+    .settings-btn:hover {
+      color: var(--accent) !important;
+      background: none !important;
     }
     
     /* Mobile responsive version footer */
     @media (max-width: 768px) {
-      .version-footer{padding:15px 12px;font-size:10px;margin-top:15px}
+      .version-footer{padding:6px 12px;font-size:9px;min-height:28px}
+      .footer-actions{right:12px}
+      .settings-btn{padding:2px 6px !important;font-size:9px !important}
     }
 
     .version-memo{
@@ -1004,19 +1086,18 @@
         </table>
       </div>
     </section>
-    <button id="moreBtn" title="Load more rows">Show more</button>
+    <button id="moreBtn" class="action-button" title="Load more rows">Show more</button>
   </main>
 
   <!-- Version Footer -->
-  <div class="version-footer">
-    <div>IPoint v2.7.0 - Customizable Dashboard & Themes</div>
-    <div class="version-memo">
-      <!-- AI Memo: Added drag-and-drop widgets, custom themes, and settings popup -->
-      <!-- Last updated: Advanced UI/UX with customization options -->
+  <div class="version-footer" id="versionFooter">
+    <div class="version-info">
+      <div id="versionDisplay">IPoint v<span id="versionNumber">2.7.6</span></div>
     </div>
-    <div style="margin-top: 8px;">
-      <button onclick="openSettings()" style="background: var(--button-bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; color: var(--text); font-size: 11px; cursor: pointer; transition: all 0.2s ease;">
-        ⚙️ Settings
+    <div class="footer-actions">
+      <button onclick="openSettings()" class="settings-btn">
+        <span class="btn-icon">⚙️</span>
+        <span class="btn-text">Settings</span>
       </button>
     </div>
   </div>
@@ -1051,10 +1132,6 @@
       <div class="settings-section">
         <div class="settings-section-title">Dashboard</div>
         <div class="settings-group">
-          <div class="settings-row">
-            <div class="settings-label">Enable Drag & Drop</div>
-            <div class="settings-toggle" id="dragToggle" onclick="toggleDragDrop()"></div>
-          </div>
           <div class="settings-row">
             <div class="settings-label">Reset Widget Order</div>
             <button class="settings-button" onclick="resetWidgetOrder()">Reset</button>
@@ -1096,13 +1173,13 @@
   let   histVisible       = HIST_PAGE_SIZE;
   let   SORT = { key: 'date', dir: 'desc' };
 
+  // Version constant
+  const APP_VERSION = '2.7.6';
+  
   // Customization variables
-  let dragDropEnabled = false;
   let customAccentColor = '#7aa2ff';
   let currentTheme = 'dark';
   let widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
-  let draggedElement = null;
-  let dragPlaceholder = null;
 
   // Kill-switch variables
   let killSwitchActive = false;
@@ -1128,25 +1205,27 @@
         const settings = JSON.parse(saved);
         console.log('IPoint: Loaded settings:', settings);
         
-        dragDropEnabled = settings.dragDropEnabled || false;
         customAccentColor = settings.customAccentColor || '#7aa2ff';
         currentTheme = settings.currentTheme || 'dark';
         widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
         
-        console.log('IPoint: Applying settings - dragDropEnabled:', dragDropEnabled, 'customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
+        console.log('IPoint: Applying settings - customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
         console.log('IPoint: Loaded widget order:', widgetOrder);
         
         // Apply loaded settings - with safety checks
         try {
-          updateDragDropUI();
           // Delay reorderWidgets to ensure DOM is fully ready
           setTimeout(() => {
-            reorderWidgets(); // Apply saved widget order on load
-            console.log('IPoint: Widget order applied after delay');
-          }, 100);
-          console.log('IPoint: Drag drop UI updated');
+            // Only reorder widgets if the page is fully loaded
+            if (document.readyState === 'complete') {
+              reorderWidgets(); // Apply saved widget order on load
+              console.log('IPoint: Widget order applied after delay');
+            } else {
+              console.log('IPoint: Page not fully loaded, skipping widget reorder');
+            }
+          }, 1000);
         } catch (e) {
-          console.warn('Failed to update drag drop UI:', e);
+          console.warn('Failed to reorder widgets:', e);
         }
         
         try {
@@ -1182,11 +1261,10 @@
 
   function saveSettings() {
     const settings = {
-      dragDropEnabled,
       customAccentColor,
       currentTheme,
       widgetOrder,
-      version: '2.7.1'
+      version: APP_VERSION
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     closeSettings();
@@ -1194,11 +1272,10 @@
 
   function exportSettings() {
     const settings = {
-      dragDropEnabled,
       customAccentColor,
       currentTheme,
       widgetOrder,
-      version: '2.7.1',
+      version: APP_VERSION,
       exportDate: new Date().toISOString()
     };
     
@@ -1225,13 +1302,11 @@
         const settings = JSON.parse(e.target.result);
         
         if (settings.version && settings.version.startsWith('2.7')) {
-          dragDropEnabled = settings.dragDropEnabled || false;
           customAccentColor = settings.customAccentColor || '#7aa2ff';
           currentTheme = settings.currentTheme || 'dark';
           widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
           
           // Apply imported settings
-          updateDragDropUI();
           updateAccentColor(customAccentColor);
           setTheme(currentTheme);
           // Delay reorderWidgets to ensure DOM is fully ready
@@ -1264,8 +1339,32 @@
   function loadSettingsToUI() {
     document.getElementById('themeSelect').value = currentTheme;
     document.getElementById('accentColor').value = customAccentColor;
-    document.getElementById('dragToggle').classList.toggle('active', dragDropEnabled);
     updateThemePreview();
+  }
+
+  function updateVersionDisplay() {
+    const versionElement = document.getElementById('versionNumber');
+    if (versionElement) {
+      versionElement.textContent = APP_VERSION;
+    }
+  }
+
+  function handleFooterVisibility() {
+    const footer = document.getElementById('versionFooter');
+    if (!footer) return;
+    
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+    
+    // Show footer when scrolled to bottom (within 50px)
+    const isAtBottom = scrollTop + windowHeight >= documentHeight - 50;
+    
+    if (isAtBottom) {
+      footer.classList.add('visible');
+    } else {
+      footer.classList.remove('visible');
+    }
   }
 
   function changeThemeMode(theme) {
@@ -1331,132 +1430,6 @@
     }
   }
 
-  function toggleDragDrop() {
-    dragDropEnabled = !dragDropEnabled;
-    document.getElementById('dragToggle').classList.toggle('active', dragDropEnabled);
-    updateDragDropUI();
-  }
-
-  function updateDragDropUI() {
-    const grid = document.querySelector('.grid');
-    if (!grid) {
-      console.warn('Grid not found, skipping drag drop UI update');
-      return;
-    }
-    
-    if (dragDropEnabled) {
-      grid.classList.add('draggable');
-      attachDragDropListeners();
-    } else {
-      grid.classList.remove('draggable');
-      removeDragDropListeners();
-    }
-  }
-
-  // Drag and Drop Functions
-  function attachDragDropListeners() {
-    const grid = document.querySelector('.grid');
-    if (!grid) return;
-
-    const widgets = grid.querySelectorAll('.kv');
-    widgets.forEach(widget => {
-      widget.draggable = true;
-      widget.addEventListener('dragstart', handleDragStart);
-      widget.addEventListener('dragend', handleDragEnd);
-      widget.addEventListener('dragover', handleDragOver);
-      widget.addEventListener('drop', handleDrop);
-      
-      // Add mobile touch support
-      widget.addEventListener('touchstart', handleTouchStart, { passive: false });
-      widget.addEventListener('touchmove', handleTouchMove, { passive: false });
-      widget.addEventListener('touchend', handleTouchEnd, { passive: false });
-    });
-  }
-
-  function removeDragDropListeners() {
-    const grid = document.querySelector('.grid');
-    if (!grid) return;
-
-    const widgets = grid.querySelectorAll('.kv');
-    widgets.forEach(widget => {
-      widget.draggable = false;
-      widget.removeEventListener('dragstart', handleDragStart);
-      widget.removeEventListener('dragend', handleDragEnd);
-      widget.removeEventListener('dragover', handleDragOver);
-      widget.removeEventListener('drop', handleDrop);
-      
-      // Remove mobile touch support
-      widget.removeEventListener('touchstart', handleTouchStart);
-      widget.removeEventListener('touchmove', handleTouchMove);
-      widget.removeEventListener('touchend', handleTouchEnd);
-    });
-  }
-
-  function handleDragStart(e) {
-    if (!dragDropEnabled) return;
-    
-    draggedElement = e.target;
-    draggedElement.classList.add('dragging');
-    
-    // Create placeholder
-    dragPlaceholder = document.createElement('div');
-    dragPlaceholder.className = 'kv drag-placeholder';
-    dragPlaceholder.style.height = draggedElement.offsetHeight + 'px';
-    
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', draggedElement.outerHTML);
-  }
-
-  function handleDragEnd(e) {
-    if (!dragDropEnabled) return;
-    
-    draggedElement.classList.remove('dragging');
-    
-    if (dragPlaceholder && dragPlaceholder.parentNode) {
-      dragPlaceholder.parentNode.removeChild(dragPlaceholder);
-    }
-    
-    draggedElement = null;
-    dragPlaceholder = null;
-  }
-
-  function handleDragOver(e) {
-    if (!dragDropEnabled) return;
-    
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    const target = e.target.closest('.kv');
-    if (target && target !== draggedElement) {
-      target.classList.add('drag-over');
-    }
-  }
-
-  function handleDrop(e) {
-    if (!dragDropEnabled) return;
-    
-    e.preventDefault();
-    
-    const target = e.target.closest('.kv');
-    if (target && target !== draggedElement) {
-      target.classList.remove('drag-over');
-      
-      // Swap elements
-      const grid = target.parentNode;
-      const draggedIndex = Array.from(grid.children).indexOf(draggedElement);
-      const targetIndex = Array.from(grid.children).indexOf(target);
-      
-      if (draggedIndex < targetIndex) {
-        grid.insertBefore(draggedElement, target.nextSibling);
-      } else {
-        grid.insertBefore(draggedElement, target);
-      }
-      
-      // Update widget order and save immediately
-      updateWidgetOrder();
-      console.log('IPoint: Widget order saved after drag and drop');
-    }
-  }
 
   function updateWidgetOrder() {
     const grid = document.querySelector('.grid');
@@ -1487,11 +1460,10 @@
     
     // Save widget order immediately
     const settings = {
-      dragDropEnabled,
       customAccentColor,
       currentTheme,
       widgetOrder,
-      version: '2.7.1'
+      version: APP_VERSION
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     console.log('IPoint: Widget order saved to localStorage:', widgetOrder);
@@ -1562,13 +1534,11 @@
   function resetAllSettings() {
     if (confirm('Reset all settings to default? This will clear your customizations.')) {
       localStorage.removeItem(SETTINGS_KEY);
-      dragDropEnabled = false;
       customAccentColor = '#7aa2ff';
       currentTheme = 'dark';
       widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
       
       // Reset UI
-      updateDragDropUI();
       updateAccentColor(customAccentColor);
       setTheme(currentTheme);
       // Delay reorderWidgets to ensure DOM is fully ready
@@ -1580,90 +1550,6 @@
     }
   }
 
-  // Mobile Touch Support for Drag and Drop
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchMoved = false;
-  let touchElement = null;
-
-  function handleTouchStart(e) {
-    if (!dragDropEnabled) return;
-    
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-    touchMoved = false;
-    touchElement = e.target.closest('.kv');
-    
-    if (touchElement) {
-      e.preventDefault();
-    }
-  }
-
-  function handleTouchMove(e) {
-    if (!dragDropEnabled || !touchElement) return;
-    
-    const touch = e.touches[0];
-    const deltaX = Math.abs(touch.clientX - touchStartX);
-    const deltaY = Math.abs(touch.clientY - touchStartY);
-    
-    // If moved more than 10px, start drag
-    if (deltaX > 10 || deltaY > 10) {
-      if (!touchMoved) {
-        touchMoved = true;
-        touchElement.classList.add('dragging');
-        
-        // Create placeholder
-        dragPlaceholder = document.createElement('div');
-        dragPlaceholder.className = 'kv drag-placeholder';
-        dragPlaceholder.style.height = touchElement.offsetHeight + 'px';
-        touchElement.parentNode.insertBefore(dragPlaceholder, touchElement.nextSibling);
-        
-        draggedElement = touchElement;
-      }
-      
-      e.preventDefault();
-    }
-  }
-
-  function handleTouchEnd(e) {
-    if (!dragDropEnabled || !touchElement) return;
-    
-    if (touchMoved && draggedElement) {
-      // Find drop target
-      const touch = e.changedTouches[0];
-      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-      const target = elementBelow ? elementBelow.closest('.kv') : null;
-      
-      if (target && target !== draggedElement) {
-        // Swap elements
-        const grid = target.parentNode;
-        const draggedIndex = Array.from(grid.children).indexOf(draggedElement);
-        const targetIndex = Array.from(grid.children).indexOf(target);
-        
-        if (draggedIndex < targetIndex) {
-          grid.insertBefore(draggedElement, target.nextSibling);
-        } else {
-          grid.insertBefore(draggedElement, target);
-        }
-        
-        // Update widget order and save immediately
-        updateWidgetOrder();
-        console.log('IPoint: Widget order saved after mobile drag and drop');
-      }
-      
-      // Clean up
-      draggedElement.classList.remove('dragging');
-      if (dragPlaceholder && dragPlaceholder.parentNode) {
-        dragPlaceholder.parentNode.removeChild(dragPlaceholder);
-      }
-      draggedElement = null;
-      dragPlaceholder = null;
-    }
-    
-    touchElement = null;
-    touchMoved = false;
-  }
 
   const $ = (id) => document.getElementById(id);
   const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
@@ -2494,7 +2380,7 @@
         country: (h.country || '') + (h.country_code ? ` (${h.country_code})` : ''),
         city: h.city || '', isp: (h.connection && h.connection.isp) || '',
         asn: (h.connection && h.connection.asn) || '', 
-        changed: isSecurityAlert ? 'SECURITY ALERT' : (isSpeedTest ? 'SPEED TEST' : (anyChanged ? 'Yes' : 'No')),
+        changed: isSecurityAlert ? 'SECURITY ALERT' : (isSpeedTest ? 'SPEED TEST' : (anyChanged ? 'IP CHANGED' : '—')),
         speed: speedDisplay,
         changedFlags: changed,
         securityAlert: isSecurityAlert,
@@ -2532,8 +2418,8 @@
         tr.classList.add('security-alert');
       } else if (h.speedTest) {
         tr.classList.add('speed-test');
-      } else if (h.changed === 'Yes') {
-        tr.classList.add('entry-changed');
+      } else if (h.changed === 'IP CHANGED') {
+        tr.classList.add('ip-changed');
       }
       
       // Use relative time instead of date
@@ -2565,7 +2451,7 @@
         <td title="${cityText}">${truncateText(cityText, 12)}</td>
         <td ${h.changedFlags.isp ? 'class="changed"' : ''} title="${ispText}">${truncateText(ispText, 15)}</td>
         <td ${h.changedFlags.asn ? 'class="changed"' : ''} title="${asnText}">${truncateText(asnText, 10)}</td>
-        <td style="${h.securityAlert ? 'color: #ef6a6a; font-weight: 600;' : (h.speedTest ? 'color: #7aa2ff; font-weight: 600;' : '')}" title="${changedText}">${truncateText(changedText, 12)}</td>
+        <td style="${h.securityAlert ? 'color: #ef6a6a; font-weight: 600; text-shadow: 0 0 2px rgba(239, 106, 106, 0.3);' : (h.speedTest ? 'color: #7aa2ff; font-weight: 600; text-shadow: 0 0 2px rgba(122, 162, 255, 0.3);' : (h.changed === 'IP CHANGED' ? 'color: #f5b64d; font-weight: 600; text-shadow: 0 0 2px rgba(245, 182, 77, 0.3);' : ''))}" title="${changedText}">${truncateText(changedText, 12)}</td>
         <td title="${speedText}">${truncateText(speedText, 15)}</td>
       `;
       
@@ -3007,17 +2893,24 @@
   async function init(){
     console.log('IPoint: Starting initialization...');
     
-    // Initialize theme first
-    initTheme();
-    
-    const dev = deviceInfo();
-    setKV('ua', dev.ua);
+    try {
+      // Initialize theme first
+      initTheme();
+      
+      // Update version display
+      updateVersionDisplay();
+      
+      // Initialize footer visibility
+      handleFooterVisibility();
+      
+      const dev = deviceInfo();
+      setKV('ua', dev.ua);
 
-    // Try both providers with normalization
-    try{
-      console.log('IPoint: Fetching IP data...');
-      const data = await getIpData();
-      console.log('IPoint: IP data received:', data);
+      // Try both providers with normalization
+      try{
+        console.log('IPoint: Fetching IP data...');
+        const data = await getIpData();
+        console.log('IPoint: IP data received:', data);
 
       // change badges vs last
       const hist = getHistory();
@@ -3052,9 +2945,9 @@
       // Load customization settings after everything is set up
       setTimeout(() => {
         loadSettings();
-      }, 100);
+      }, 1000);
       
-    }catch(err){
+      } catch(err){
       console.error('IPoint: Error during initialization:', err);
       // Never reference an undefined `data` here.
       $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
@@ -3066,7 +2959,10 @@
       // Load customization settings even if data loading failed
       setTimeout(() => {
         loadSettings();
-      }, 100);
+      }, 1000);
+    }
+    } catch(outerErr) {
+      console.error('IPoint: Outer initialization error:', outerErr);
     }
   }
 
@@ -3118,12 +3014,16 @@
     stopKillSwitch();
   });
 
+  // Handle footer visibility on scroll
+  window.addEventListener('scroll', handleFooterVisibility);
+  window.addEventListener('resize', handleFooterVisibility);
+
   // PWA Service Worker Registration
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       // Create a simple service worker inline
       const swCode = `
-        const CACHE_NAME = 'ipoint-v2.7.1';
+        const CACHE_NAME = 'ipoint-v2.7.6';
         const urlsToCache = [
           '/',
           'https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css',
@@ -3210,7 +3110,6 @@
   window.closeSettings = closeSettings;
   window.changeThemeMode = changeThemeMode;
   window.updateAccentColor = updateAccentColor;
-  window.toggleDragDrop = toggleDragDrop;
   window.resetWidgetOrder = resetWidgetOrder;
   window.exportSettings = exportSettings;
   window.importSettings = importSettings;
