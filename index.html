@@ -1795,11 +1795,71 @@
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 
+  // Theme functions
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+  }
 
-  const $ = (id) => document.getElementById(id);
-  const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
-  const fmtDate = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit'}).format(d);
-  const fmtTime = (d) => new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
+  function setTheme(theme) {
+    currentTheme = theme;
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+
+  function changeThemeMode() {
+    const themes = ['light', 'dark', 'oled'];
+    const currentIndex = themes.indexOf(currentTheme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    const newTheme = themes[nextIndex];
+    setTheme(newTheme);
+    loadSettingsToUI();
+  }
+
+  function loadSettingsToUI() {
+    // Update theme toggle
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+    if (themeIcon && themeText) {
+      const icons = { light: '☀️', dark: '🌙', oled: '⚫' };
+      const names = { light: 'Light', dark: 'Dark', oled: 'OLED' };
+      themeIcon.textContent = icons[currentTheme] || '🌙';
+      themeText.textContent = names[currentTheme] || 'Dark';
+    }
+  }
+
+  function updateAccentColor(color) {
+    customAccentColor = color;
+    document.documentElement.style.setProperty('--accent', color);
+    
+    // Convert hex to HSL for tinting
+    const hex = color.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16) / 255;
+    const g = parseInt(hex.substr(2, 2), 16) / 255;
+    const b = parseInt(hex.substr(4, 2), 16) / 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    
+    document.documentElement.style.setProperty('--tint-hue', Math.round(h * 360));
+    document.documentElement.style.setProperty('--tint-saturation', Math.round(s * 100) + '%');
+    document.documentElement.style.setProperty('--tint-lightness', Math.round(l * 100) + '%');
+    document.documentElement.style.setProperty('--tint-alpha', '0.1');
+  }
   
   // Calculate relative time (x minutes/hours ago)
   function getRelativeTime(timestamp) {
@@ -3344,8 +3404,6 @@
   window.importSettings = importSettings;
   window.saveSettings = saveSettings;
   window.resetAllSettings = resetAllSettings;
-  window.showReAddWidgets = showReAddWidgets;
-  window.reAddWidget = reAddWidget;
   window.enterEditMode = enterEditMode;
   window.exitEditMode = exitEditMode;
 
