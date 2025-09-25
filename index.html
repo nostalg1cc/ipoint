@@ -58,6 +58,11 @@
       user-select: none;
     }
     
+    /* Alternating background colors for better differentiation */
+    .kv:nth-child(even) {
+      background: var(--kv-bg-alt, var(--kv-bg));
+    }
+    
     .kv:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -65,9 +70,10 @@
     
     .kv.dragging {
       cursor: grabbing;
-      transform: rotate(5deg) scale(1.05);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      transform: scale(1.1);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
       z-index: 1000;
+      opacity: 0.9;
     }
     
     .kv.drag-over {
@@ -323,6 +329,7 @@
       --card-bg: rgba(0, 0, 0, 0.8);
       --card-border: linear-gradient(to bottom right, rgba(0,255,0,.2), rgba(0,255,0,.05));
       --kv-bg: rgba(0, 0, 0, 0.6);
+      --kv-bg-alt: rgba(0, 0, 0, 0.4);
       --kv-border: linear-gradient(to bottom right, rgba(0,255,0,.15), rgba(0,255,0,.03));
       --table-border: rgba(0,255,0,.2);
       --hover-bg: rgba(255,255,255,0.05);
@@ -417,6 +424,7 @@
       --card-bg: rgba(150, 161, 196, 0.062);
       --card-border: linear-gradient(to bottom right,rgba(108,99,134,.25),rgba(108,99,134,.05));
       --kv-bg: rgba(150, 161, 196, 0.04);
+      --kv-bg-alt: rgba(150, 161, 196, 0.02);
       --kv-border: linear-gradient(to bottom right,rgba(108,99,134,.2),rgba(108,99,134,.04));
       --table-border: rgba(108,99,134,.25);
       --hover-bg: #ffffff05;
@@ -445,6 +453,7 @@
       --card-bg: rgba(250, 251, 252, 0.85);
       --card-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.25), rgba(160, 174, 192, 0.08));
       --kv-bg: rgba(237, 242, 247, 0.5);
+      --kv-bg-alt: rgba(237, 242, 247, 0.3);
       --kv-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.2), rgba(160, 174, 192, 0.04));
       --table-border: rgba(160, 174, 192, 0.1);
       --hover-bg: rgba(237, 242, 247, 0.4);
@@ -506,11 +515,8 @@
       .grid{grid-template-columns:repeat(2,1fr);margin:8px;gap:8px}
     }
 
-    .kv::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:var(--kv-border);
-      -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
-    .kv::after{content:"";position:absolute;inset:0;border-radius:inherit;background:hsla(var(--tint-hue), var(--tint-saturation), var(--tint-lightness), calc(var(--tint-alpha) * 0.5));pointer-events:none;z-index:0;transition:background 0.3s ease}
+    /* Removed border since alternating backgrounds provide differentiation */
+    .kv::after{content:"";position:absolute;inset:0;border-radius:inherit;background:hsla(var(--tint-hue), var(--tint-saturation), var(--tint-lightness), calc(var(--tint-alpha) * 0.3));pointer-events:none;z-index:0;transition:background 0.3s ease}
     .kv:has(#miniMap) { padding: 0; }
     
     /* Mobile responsive kv */
@@ -1122,6 +1128,7 @@
         // Apply loaded settings - with safety checks
         try {
           updateDragDropUI();
+          reorderWidgets(); // Apply saved widget order on load
           console.log('IPoint: Drag drop UI updated');
         } catch (e) {
           console.warn('Failed to update drag drop UI:', e);
@@ -1336,6 +1343,11 @@
       widget.addEventListener('dragend', handleDragEnd);
       widget.addEventListener('dragover', handleDragOver);
       widget.addEventListener('drop', handleDrop);
+      
+      // Add mobile touch support
+      widget.addEventListener('touchstart', handleTouchStart, { passive: false });
+      widget.addEventListener('touchmove', handleTouchMove, { passive: false });
+      widget.addEventListener('touchend', handleTouchEnd, { passive: false });
     });
   }
 
@@ -1350,6 +1362,11 @@
       widget.removeEventListener('dragend', handleDragEnd);
       widget.removeEventListener('dragover', handleDragOver);
       widget.removeEventListener('drop', handleDrop);
+      
+      // Remove mobile touch support
+      widget.removeEventListener('touchstart', handleTouchStart);
+      widget.removeEventListener('touchmove', handleTouchMove);
+      widget.removeEventListener('touchend', handleTouchEnd);
     });
   }
 
@@ -1517,6 +1534,90 @@
       reorderWidgets();
       loadSettingsToUI();
     }
+  }
+
+  // Mobile Touch Support for Drag and Drop
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchMoved = false;
+  let touchElement = null;
+
+  function handleTouchStart(e) {
+    if (!dragDropEnabled) return;
+    
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    touchMoved = false;
+    touchElement = e.target.closest('.kv');
+    
+    if (touchElement) {
+      e.preventDefault();
+    }
+  }
+
+  function handleTouchMove(e) {
+    if (!dragDropEnabled || !touchElement) return;
+    
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchStartX);
+    const deltaY = Math.abs(touch.clientY - touchStartY);
+    
+    // If moved more than 10px, start drag
+    if (deltaX > 10 || deltaY > 10) {
+      if (!touchMoved) {
+        touchMoved = true;
+        touchElement.classList.add('dragging');
+        
+        // Create placeholder
+        dragPlaceholder = document.createElement('div');
+        dragPlaceholder.className = 'kv drag-placeholder';
+        dragPlaceholder.style.height = touchElement.offsetHeight + 'px';
+        touchElement.parentNode.insertBefore(dragPlaceholder, touchElement.nextSibling);
+        
+        draggedElement = touchElement;
+      }
+      
+      e.preventDefault();
+    }
+  }
+
+  function handleTouchEnd(e) {
+    if (!dragDropEnabled || !touchElement) return;
+    
+    if (touchMoved && draggedElement) {
+      // Find drop target
+      const touch = e.changedTouches[0];
+      const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+      const target = elementBelow ? elementBelow.closest('.kv') : null;
+      
+      if (target && target !== draggedElement) {
+        // Swap elements
+        const grid = target.parentNode;
+        const draggedIndex = Array.from(grid.children).indexOf(draggedElement);
+        const targetIndex = Array.from(grid.children).indexOf(target);
+        
+        if (draggedIndex < targetIndex) {
+          grid.insertBefore(draggedElement, target.nextSibling);
+        } else {
+          grid.insertBefore(draggedElement, target);
+        }
+        
+        // Update widget order
+        updateWidgetOrder();
+      }
+      
+      // Clean up
+      draggedElement.classList.remove('dragging');
+      if (dragPlaceholder && dragPlaceholder.parentNode) {
+        dragPlaceholder.parentNode.removeChild(dragPlaceholder);
+      }
+      draggedElement = null;
+      dragPlaceholder = null;
+    }
+    
+    touchElement = null;
+    touchMoved = false;
   }
 
   const $ = (id) => document.getElementById(id);
