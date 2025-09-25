@@ -312,37 +312,45 @@
     .twitch-indicators {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin: 16px 0;
-      padding: 0 10px;
+      gap: 16px;
+      margin: 20px 0;
+      padding: 0 20px;
       justify-content: center;
     }
     
     .twitch-channel {
       position: relative;
-      width: 48px;
-      height: 48px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
       text-decoration: none;
       border: 3px solid var(--line);
       overflow: hidden;
+      display: block;
     }
     
     .twitch-channel:hover {
-      transform: translateY(-3px) scale(1.1);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      transform: translateY(-4px) scale(1.15);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
     }
     
     .twitch-channel.live {
       border-color: #00ff00;
-      box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+      animation: pulse 2s infinite;
     }
     
     .twitch-channel.offline {
       border-color: var(--muted);
-      opacity: 0.6;
+      opacity: 0.7;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
+      50% { box-shadow: 0 0 30px rgba(0, 255, 0, 0.8); }
+      100% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
     }
     
     .twitch-avatar {
@@ -354,22 +362,24 @@
     
     .twitch-tooltip {
       position: absolute;
-      bottom: -35px;
+      bottom: -45px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--card-bg);
       color: var(--text);
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 11px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
       font-weight: 600;
       white-space: nowrap;
       opacity: 0;
       visibility: hidden;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
       z-index: 1000;
       border: 1px solid var(--line);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      text-align: center;
+      min-width: 120px;
     }
     
     .twitch-channel:hover .twitch-tooltip {
@@ -379,21 +389,28 @@
     
     .twitch-live-dot {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      width: 12px;
-      height: 12px;
+      top: 3px;
+      right: 3px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
       border: 2px solid var(--card-bg);
     }
     
     .twitch-live-dot.live {
       background: #00ff00;
-      box-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+      animation: pulse-dot 1.5s infinite;
     }
     
     .twitch-live-dot.offline {
       background: var(--muted);
+    }
+    
+    @keyframes pulse-dot {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
     }
     
     .twitch-channels-list {
