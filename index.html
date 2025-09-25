@@ -92,54 +92,7 @@
       100% { transform: rotate(1deg); }
     }
     
-    /* Remove button */
-    .kv .remove-btn {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      width: 20px;
-      height: 20px;
-      background: var(--bad);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      font-size: 12px;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      transition: all 0.2s ease;
-    }
-    
-    .kv.wiggle .remove-btn {
-      display: flex;
-    }
-    
-    .kv .remove-btn:hover {
-      background: #dc2626;
-      transform: scale(1.1);
-    }
-    
-    /* Ensure remove button is visible */
-    .kv {
-      overflow: visible !important;
-      position: relative;
-    }
-    
-    .kv.wiggle {
-      overflow: visible !important;
-      position: relative;
-    }
-    
-    /* Make sure the grid doesn't clip the buttons */
-    .grid {
-      overflow: visible !important;
-    }
-    
-    .grid.edit-mode {
-      overflow: visible !important;
-    }
+    /* Removed remove button styles - no container removal */
     
     /* Edit mode styles */
     .grid.edit-mode .kv {
@@ -896,49 +849,12 @@
       #miniMap{height:100px}
     }
     
-    /* Map widget expansion - ensure it fills container */
-    .kv:has(#miniMap) {
-      min-height: 160px;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-    
-    .kv:has(#miniMap)[style*="grid-column: span 2"] {
-      min-height: 200px;
-    }
-    
-    .kv:has(#miniMap)[style*="grid-column: span 3"] {
-      min-height: 220px;
-    }
-    
-    /* Ensure map container fills available space */
-    .kv:has(#miniMap) .v {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      min-height: 0;
-    }
-    
-    .kv:has(#miniMap) #miniMap {
-      flex: 1;
-      min-height: 0;
-      height: 100%;
-      width: 100%;
-    }
-    
-    /* Ensure grid items fill their space */
-    .grid .kv {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .grid .kv .v {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+    /* Simplified map styles - fixed 2x4 grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 12px;
     }
 
     /* small style for IPv6 line under IPv4 */
@@ -1196,11 +1112,7 @@
           </div>
           <div class="settings-row">
             <div class="settings-label">Reset Widget Order</div>
-            <button class="settings-button" onclick="resetWidgetOrder()">Reset</button>
-          </div>
-          <div class="settings-row">
-            <div class="settings-label">Re-add Removed Widgets</div>
-            <button class="settings-button" onclick="showReAddWidgets()">Manage</button>
+            <button class="settings-button" onclick="resetWidgetOrder()">Reset to Default</button>
           </div>
         </div>
       </div>
@@ -1240,12 +1152,12 @@
   let   SORT = { key: 'date', dir: 'desc' };
 
   // Customization variables
-  const APP_VERSION = '2.10.0';
+  const APP_VERSION = '2.11.0';
   let dragDropEnabled = false;
   let customAccentColor = '#7aa2ff';
   let currentTheme = 'dark';
   let widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
-  let removedWidgets = [];
+  // Removed removedWidgets - no container removal
   let draggedElement = null;
   let dragPlaceholder = null;
   let editMode = false;
@@ -1276,11 +1188,10 @@
         const settings = JSON.parse(saved);
         console.log('IPoint: Loaded settings:', settings);
         
-        dragDropEnabled = settings.dragDropEnabled || false;
-        customAccentColor = settings.customAccentColor || '#7aa2ff';
-        currentTheme = settings.currentTheme || 'dark';
-        widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
-        removedWidgets = settings.removedWidgets || [];
+      dragDropEnabled = settings.dragDropEnabled || false;
+      customAccentColor = settings.customAccentColor || '#7aa2ff';
+      currentTheme = settings.currentTheme || 'dark';
+      widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
         
         console.log('IPoint: Applying settings - dragDropEnabled:', dragDropEnabled, 'customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
         
@@ -1371,7 +1282,6 @@
           customAccentColor = settings.customAccentColor || '#7aa2ff';
           currentTheme = settings.currentTheme || 'dark';
           widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
-          removedWidgets = settings.removedWidgets || [];
           
           // Apply imported settings
           updateDragDropUI();
@@ -1495,7 +1405,6 @@
     } else {
       grid.classList.remove('draggable');
       removeDragDropListeners();
-      removeRemoveButtons();
       exitEditMode();
     }
   }
@@ -1738,14 +1647,12 @@
       grid.appendChild(widget);
     });
     
-    // Reset any existing grid spans
-    widgets.forEach(widget => {
-      widget.style.gridColumn = '';
-      widget.style.gridRow = '';
-    });
-    
-    // Redistribute space
-    redistributeSpace();
+    // Set fixed 2x4 grid layout
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      grid.style.gridTemplateRows = 'repeat(2, 1fr)';
+    }
   }
 
   function resetWidgetOrder() {
@@ -1809,8 +1716,7 @@
       widget.draggable = false;
     });
     
-    // Remove ALL delete buttons
-    removeRemoveButtons();
+    // No delete buttons to remove
     
     // Clear wiggle timeout
     if (wiggleTimeout) {
@@ -1836,7 +1742,7 @@
   function startWiggle(widget) {
     if (!widget) return;
     
-    // Make ALL widgets wiggle and show delete buttons (like iOS)
+    // Make ALL widgets wiggle (like iOS)
     const grid = document.querySelector('.grid');
     if (grid) {
       const allWidgets = grid.querySelectorAll('.kv');
@@ -1844,9 +1750,6 @@
         w.classList.add('wiggle');
         w.draggable = true; // Make them draggable!
       });
-      
-      // Add delete buttons to all widgets
-      addRemoveButtons();
     }
     
     // Clear any existing timeout
@@ -1873,66 +1776,9 @@
   }
 
   // Widget Management Functions
-  function addRemoveButtons() {
-    const grid = document.querySelector('.grid');
-    if (!grid) return;
+  // Removed addRemoveButtons and removeRemoveButtons functions - no container removal
 
-    const widgets = grid.querySelectorAll('.kv');
-    widgets.forEach(widget => {
-      // Remove existing remove button
-      const existingBtn = widget.querySelector('.remove-btn');
-      if (existingBtn) {
-        existingBtn.remove();
-      }
-      
-      // Add remove button
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'remove-btn';
-      removeBtn.innerHTML = '×';
-      removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        removeWidget(widget);
-      };
-      widget.appendChild(removeBtn);
-    });
-  }
-
-  function removeRemoveButtons() {
-    const removeBtns = document.querySelectorAll('.remove-btn');
-    removeBtns.forEach(btn => btn.remove());
-  }
-
-  function removeWidget(widget) {
-    const widgetType = getWidgetType(widget);
-    if (!widgetType) return;
-    
-    // Add to removed widgets
-    if (!removedWidgets.includes(widgetType)) {
-      removedWidgets.push(widgetType);
-    }
-    
-    // Remove from widget order
-    const index = widgetOrder.indexOf(widgetType);
-    if (index > -1) {
-      widgetOrder.splice(index, 1);
-    }
-    
-    // Hide widget
-    widget.style.display = 'none';
-    
-    // Save settings
-    saveWidgetSettings();
-    
-    // Redistribute space
-    redistributeSpace();
-    
-    // Force map reinitialization after widget removal
-    setTimeout(() => {
-      reinitializeMap();
-    }, 200);
-    
-    console.log('IPoint: Widget removed:', widgetType);
-  }
+  // Removed removeWidget function - no container removal
 
   function getWidgetType(widget) {
     const keyElement = widget.querySelector('.k');
@@ -1950,78 +1796,7 @@
     return null;
   }
 
-  function redistributeSpace() {
-    const grid = document.querySelector('.grid');
-    if (!grid) return;
-    
-    // Calculate how many widgets are visible
-    const visibleWidgets = Array.from(grid.children).filter(widget => 
-      widget.style.display !== 'none'
-    );
-    
-    // Reset all grid spans first
-    visibleWidgets.forEach(widget => {
-      widget.style.gridColumn = '';
-      widget.style.gridRow = '';
-    });
-    
-    // Find the map widget
-    const mapWidget = visibleWidgets.find(widget => widget.querySelector('#miniMap'));
-    const hasMap = !!mapWidget;
-    const visibleCount = visibleWidgets.length;
-    
-    console.log('IPoint: Redistributing space - visible widgets:', visibleCount, 'has map:', hasMap);
-    
-    // Simple logic: All widgets equal size by default, map gets priority when space is available
-    if (visibleCount <= 4) {
-      // 4 or fewer widgets: All equal size, 4 columns
-      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-      if (hasMap) {
-        mapWidget.style.gridColumn = 'span 1';
-        mapWidget.style.gridRow = 'span 1';
-      }
-    } else if (visibleCount <= 6) {
-      // 5-6 widgets: Map spans 2 columns, others 1 column each
-      grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
-      if (hasMap) {
-        mapWidget.style.gridColumn = 'span 2';
-        mapWidget.style.gridRow = 'span 1';
-      }
-    } else {
-      // 7+ widgets: Map spans 2 columns, others 1 column each
-      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-      if (hasMap) {
-        mapWidget.style.gridColumn = 'span 2';
-        mapWidget.style.gridRow = 'span 1';
-      }
-    }
-    
-    // Force map to fill its container completely
-    if (hasMap) {
-      const mapElement = mapWidget.querySelector('#miniMap');
-      if (mapElement) {
-        // Remove any fixed height and let it fill the container
-        mapElement.style.height = '100%';
-        mapElement.style.width = '100%';
-        mapElement.style.minHeight = '160px';
-        
-        // Ensure the map container fills its space
-        const mapContainer = mapWidget.querySelector('.v');
-        if (mapContainer) {
-          mapContainer.style.height = '100%';
-          mapContainer.style.display = 'flex';
-          mapContainer.style.flexDirection = 'column';
-        }
-      }
-    }
-    
-    // Reinitialize map after a delay to ensure DOM is updated
-    setTimeout(() => {
-      reinitializeMap();
-    }, 100);
-    
-    console.log('IPoint: Space redistributed - grid columns:', grid.style.gridTemplateColumns);
-  }
+  // Removed redistributeSpace function - using fixed 2x4 grid
   
   // Helper function to reinitialize map
   function reinitializeMap() {
@@ -2065,47 +1840,7 @@
     }
   }
 
-  function reAddWidget(widgetType) {
-    if (!removedWidgets.includes(widgetType)) return;
-    
-    // Remove from removed widgets
-    const index = removedWidgets.indexOf(widgetType);
-    if (index > -1) {
-      removedWidgets.splice(index, 1);
-    }
-    
-    // Add back to widget order
-    if (!widgetOrder.includes(widgetType)) {
-      widgetOrder.push(widgetType);
-    }
-    
-    // Show widget
-    const grid = document.querySelector('.grid');
-    if (grid) {
-      const widgets = grid.querySelectorAll('.kv');
-      widgets.forEach(widget => {
-        if (getWidgetType(widget) === widgetType) {
-          widget.style.display = '';
-          // Reset grid spans when re-adding
-          widget.style.gridColumn = '';
-          widget.style.gridRow = '';
-        }
-      });
-    }
-    
-    // Save settings
-    saveWidgetSettings();
-    
-    // Redistribute space
-    redistributeSpace();
-    
-    // Force map reinitialization after widget re-addition
-    setTimeout(() => {
-      reinitializeMap();
-    }, 200);
-    
-    console.log('IPoint: Widget re-added:', widgetType);
-  }
+  // Removed reAddWidget function - no container removal
 
   function saveWidgetSettings() {
     const settings = {
@@ -2113,44 +1848,12 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
-      removedWidgets,
       version: APP_VERSION
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 
-  function showReAddWidgets() {
-    if (removedWidgets.length === 0) {
-      alert('No widgets have been removed.');
-      return;
-    }
-    
-    const widgetNames = {
-      'country': 'Country',
-      'place': 'Region / City',
-      'isp': 'ISP',
-      'asn': 'ASN',
-      'ip': 'IP Address',
-      'tz': 'Timezone',
-      'ua': 'User Agent',
-      'map': 'Map'
-    };
-    
-    const widgetList = removedWidgets.map(type => 
-      `• ${widgetNames[type] || type}`
-    ).join('\n');
-    
-    const choice = confirm(`Removed widgets:\n\n${widgetList}\n\nClick OK to re-add all removed widgets, or Cancel to keep them hidden.`);
-    
-    if (choice) {
-      // Re-add all removed widgets
-      const widgetsToReAdd = [...removedWidgets];
-      widgetsToReAdd.forEach(type => {
-        reAddWidget(type);
-      });
-      alert('All widgets have been re-added!');
-    }
-  }
+  // Removed showReAddWidgets function - no container removal
 
   const $ = (id) => document.getElementById(id);
   const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
