@@ -108,7 +108,7 @@
       display: none;
       align-items: center;
       justify-content: center;
-      z-index: 10;
+      z-index: 100;
       transition: all 0.2s ease;
     }
     
@@ -119,6 +119,15 @@
     .kv .remove-btn:hover {
       background: #dc2626;
       transform: scale(1.1);
+    }
+    
+    /* Ensure remove button is visible */
+    .kv {
+      overflow: visible !important;
+    }
+    
+    .kv.wiggle {
+      overflow: visible !important;
     }
     
     /* Edit mode styles */
@@ -1915,7 +1924,48 @@
     // Apply grid template
     grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
     
+    // Reinitialize map if it exists and space changed
+    const mapElement = document.querySelector('#miniMap');
+    if (mapElement && window.mini) {
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        try {
+          window.mini.invalidateSize();
+          console.log('IPoint: Map invalidated and resized');
+        } catch (error) {
+          console.warn('IPoint: Error resizing map:', error);
+        }
+      }, 100);
+    }
+    
     console.log('IPoint: Space redistributed - visible widgets:', visibleCount, 'columns:', columns);
+  }
+  
+  // Helper function to reinitialize map
+  function reinitializeMap() {
+    const mapElement = document.querySelector('#miniMap');
+    if (mapElement && window.mini) {
+      setTimeout(() => {
+        try {
+          window.mini.invalidateSize();
+          console.log('IPoint: Map reinitialized');
+        } catch (error) {
+          console.warn('IPoint: Error reinitializing map:', error);
+        }
+      }, 150);
+    }
+  }
+  
+  // Set up resize observer for map container
+  function setupMapResizeObserver() {
+    const mapContainer = document.querySelector('.kv:has(#miniMap)');
+    if (mapContainer && window.ResizeObserver) {
+      const resizeObserver = new ResizeObserver(() => {
+        reinitializeMap();
+      });
+      resizeObserver.observe(mapContainer);
+      console.log('IPoint: Map resize observer set up');
+    }
   }
 
   function reAddWidget(widgetType) {
@@ -2956,6 +3006,9 @@
       mini.setView([lat,lon],16); // ultra zoom
       L.circleMarker([lat,lon],{radius:5,color:'#ffffff80',fillColor:'#ffffffcc',fillOpacity:0.85,weight:1}).addTo(mini);
       setTimeout(()=>mini.invalidateSize(), 0);
+      
+      // Set up resize observer for map container
+      setupMapResizeObserver();
     }catch(_){/* noop */}
   }
 
