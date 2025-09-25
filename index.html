@@ -1424,7 +1424,6 @@
     if (dragDropEnabled) {
       grid.classList.add('draggable');
       attachDragDropListeners();
-      addRemoveButtons();
     } else {
       grid.classList.remove('draggable');
       removeDragDropListeners();
@@ -1729,11 +1728,14 @@
       grid.classList.remove('edit-mode');
     }
     
-    // Stop all wiggling
+    // Stop ALL widgets from wiggling (like iOS)
     const widgets = document.querySelectorAll('.kv.wiggle');
     widgets.forEach(widget => {
       widget.classList.remove('wiggle');
     });
+    
+    // Remove ALL delete buttons
+    removeRemoveButtons();
     
     // Clear wiggle timeout
     if (wiggleTimeout) {
@@ -1743,6 +1745,8 @@
     
     // Remove click outside listener
     document.removeEventListener('click', handleClickOutside);
+    
+    console.log('IPoint: Exited edit mode - all widgets stopped wiggling');
   }
 
   function handleClickOutside(e) {
@@ -1757,7 +1761,17 @@
   function startWiggle(widget) {
     if (!widget) return;
     
-    widget.classList.add('wiggle');
+    // Make ALL widgets wiggle and show delete buttons (like iOS)
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      const allWidgets = grid.querySelectorAll('.kv');
+      allWidgets.forEach(w => {
+        w.classList.add('wiggle');
+      });
+      
+      // Add delete buttons to all widgets
+      addRemoveButtons();
+    }
     
     // Clear any existing timeout
     if (wiggleTimeout) {
@@ -1768,6 +1782,8 @@
     wiggleTimeout = setTimeout(() => {
       exitEditMode();
     }, 10000);
+    
+    console.log('IPoint: All widgets now wiggling (iOS style)');
   }
 
   function stopWiggle(widget) {
