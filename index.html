@@ -875,7 +875,16 @@
     }
 
     /* Mini map in the card */
-    #miniMap{height:160px;border-radius:10px;overflow:hidden;outline:0px solid var(--line);background:var(--bg);transition:background 0.3s ease, height 0.3s ease}
+    #miniMap{
+      height:160px;
+      width:100%;
+      border-radius:10px;
+      overflow:hidden;
+      outline:0px solid var(--line);
+      background:var(--bg);
+      transition:background 0.3s ease, height 0.3s ease;
+      display:block;
+    }
     @media (min-width: 900px){ #miniMap{height:200px;} }
     
     /* Mobile responsive mini map */
@@ -887,17 +896,31 @@
       #miniMap{height:100px}
     }
     
-    /* Map widget expansion */
+    /* Map widget expansion - ensure it fills container */
     .kv:has(#miniMap) {
       min-height: 160px;
+      display: flex;
+      flex-direction: column;
     }
     
     .kv:has(#miniMap)[style*="grid-column: span 2"] {
-      min-height: 180px;
+      min-height: 200px;
     }
     
     .kv:has(#miniMap)[style*="grid-column: span 3"] {
-      min-height: 200px;
+      min-height: 220px;
+    }
+    
+    /* Ensure map container fills available space */
+    .kv:has(#miniMap) .v {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .kv:has(#miniMap) #miniMap {
+      flex: 1;
+      min-height: 0;
     }
 
     /* small style for IPv6 line under IPv4 */
@@ -1923,24 +1946,52 @@
       widget.style.gridRow = '';
     });
     
-    // Adjust grid columns based on visible widgets
+    // Find the map widget
+    const mapWidget = visibleWidgets.find(widget => widget.querySelector('#miniMap'));
+    const hasMap = !!mapWidget;
     const visibleCount = visibleWidgets.length;
+    
+    // Default: All widgets equal size
     let columns = 4;
+    let mapSpan = 1;
     
     if (visibleCount <= 2) {
       columns = 2;
+      mapSpan = hasMap ? 1 : 1; // Map takes normal space
     } else if (visibleCount <= 3) {
       columns = 3;
+      mapSpan = hasMap ? 1 : 1; // Map takes normal space
+    } else if (visibleCount <= 4) {
+      columns = 4;
+      mapSpan = hasMap ? 1 : 1; // Map takes normal space
     } else if (visibleCount <= 6) {
       columns = 3;
+      mapSpan = hasMap ? 2 : 1; // Map spans 2 columns when more widgets
     } else {
       columns = 4;
+      mapSpan = hasMap ? 2 : 1; // Map spans 2 columns when many widgets
     }
     
-    // Apply grid template
+    // Apply grid template with equal sizing
     grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
     
-    // Reinitialize map if it exists and space changed
+    // Apply map spanning if map exists
+    if (hasMap && mapWidget) {
+      mapWidget.style.gridColumn = `span ${mapSpan}`;
+      mapWidget.style.gridRow = 'span 1';
+      
+      // Adjust map height based on span
+      const mapElement = mapWidget.querySelector('#miniMap');
+      if (mapElement) {
+        if (mapSpan === 2) {
+          mapElement.style.height = '200px'; // Taller when spanning 2 columns
+        } else {
+          mapElement.style.height = '160px'; // Normal height
+        }
+      }
+    }
+    
+    // Reinitialize map if it exists
     const mapElement = document.querySelector('#miniMap');
     if (mapElement && window.mini) {
       // Use multiple timeouts to ensure DOM has fully updated
@@ -1964,7 +2015,7 @@
       }, 300);
     }
     
-    console.log('IPoint: Space redistributed - visible widgets:', visibleCount, 'columns:', columns);
+    console.log('IPoint: Space redistributed - visible widgets:', visibleCount, 'columns:', columns, 'map span:', mapSpan);
   }
   
   // Helper function to reinitialize map
