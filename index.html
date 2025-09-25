@@ -1106,38 +1106,49 @@
   // Settings Management
   function loadSettings() {
     try {
+      console.log('IPoint: Loading settings...');
       const saved = localStorage.getItem(SETTINGS_KEY);
       if (saved) {
         const settings = JSON.parse(saved);
+        console.log('IPoint: Loaded settings:', settings);
+        
         dragDropEnabled = settings.dragDropEnabled || false;
         customAccentColor = settings.customAccentColor || '#7aa2ff';
         currentTheme = settings.currentTheme || 'dark';
         widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
         
+        console.log('IPoint: Applying settings - dragDropEnabled:', dragDropEnabled, 'customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
+        
         // Apply loaded settings - with safety checks
         try {
           updateDragDropUI();
+          console.log('IPoint: Drag drop UI updated');
         } catch (e) {
           console.warn('Failed to update drag drop UI:', e);
         }
         
         try {
           updateAccentColor(customAccentColor);
+          console.log('IPoint: Accent color updated');
         } catch (e) {
           console.warn('Failed to update accent color:', e);
         }
         
         try {
           setTheme(currentTheme);
+          console.log('IPoint: Theme updated');
         } catch (e) {
           console.warn('Failed to set theme:', e);
         }
         
         try {
           reorderWidgets();
+          console.log('IPoint: Widgets reordered');
         } catch (e) {
           console.warn('Failed to reorder widgets:', e);
         }
+      } else {
+        console.log('IPoint: No saved settings found');
       }
     } catch (e) {
       console.warn('Failed to load settings:', e);
@@ -2842,6 +2853,8 @@
   }
 
   async function init(){
+    console.log('IPoint: Starting initialization...');
+    
     // Initialize theme first
     initTheme();
     
@@ -2850,7 +2863,9 @@
 
     // Try both providers with normalization
     try{
+      console.log('IPoint: Fetching IP data...');
       const data = await getIpData();
+      console.log('IPoint: IP data received:', data);
 
       // change badges vs last
       const hist = getHistory();
@@ -2858,9 +2873,6 @@
       diffBadges(last, data);
 
       fillUI(data);
-
-      // Load customization settings after UI is populated
-      loadSettings();
 
       // Save visit (normal entry, not security alert)
       appendHistory({
@@ -2885,7 +2897,13 @@
       // Start kill-switch monitoring
       startKillSwitch(data.ip);
       
+      // Load customization settings after everything is set up
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
+      
     }catch(err){
+      console.error('IPoint: Error during initialization:', err);
       // Never reference an undefined `data` here.
       $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
       $('greetSub').textContent = buildGreetSub({ timezone: 'UTC' });
@@ -2894,7 +2912,9 @@
       renderHistory();
       
       // Load customization settings even if data loading failed
-      loadSettings();
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
     }
   }
 
