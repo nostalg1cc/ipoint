@@ -1148,7 +1148,7 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.10.0 - Customizable Dashboard & Themes</div>
+    <div id="versionText">IPoint v2.10.0 - Customizable Dashboard & Themes</div>
     <div class="version-memo">
       <!-- AI Memo: Added drag-and-drop widgets, custom themes, and settings popup -->
       <!-- Last updated: Fixed map container filling and equal widget sizing -->
@@ -1240,6 +1240,7 @@
   let   SORT = { key: 'date', dir: 'desc' };
 
   // Customization variables
+  const APP_VERSION = '2.10.0';
   let dragDropEnabled = false;
   let customAccentColor = '#7aa2ff';
   let currentTheme = 'dark';
@@ -1326,7 +1327,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.10.0'
+      version: APP_VERSION
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     closeSettings();
@@ -1339,7 +1340,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.10.0',
+      version: APP_VERSION,
       exportDate: new Date().toISOString()
     };
     
@@ -1365,7 +1366,7 @@
       try {
         const settings = JSON.parse(e.target.result);
         
-        if (settings.version && settings.version.startsWith('2.10')) {
+        if (settings.version && settings.version.startsWith(APP_VERSION.split('.')[0] + '.' + APP_VERSION.split('.')[1])) {
           dragDropEnabled = settings.dragDropEnabled || false;
           customAccentColor = settings.customAccentColor || '#7aa2ff';
           currentTheme = settings.currentTheme || 'dark';
@@ -1684,7 +1685,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.10.0'
+      version: APP_VERSION
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
@@ -2037,6 +2038,14 @@
     }
   }
   
+  // Update footer version from JavaScript
+  function updateFooterVersion() {
+    const versionText = document.getElementById('versionText');
+    if (versionText) {
+      versionText.textContent = `IPoint v${APP_VERSION} - Customizable Dashboard & Themes`;
+    }
+  }
+  
   // Set up resize observer for map container
   function setupMapResizeObserver() {
     const mapContainer = document.querySelector('.kv:has(#miniMap)');
@@ -2105,7 +2114,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.10.0'
+      version: APP_VERSION
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
@@ -3484,6 +3493,9 @@
     
     // Initialize theme first
     initTheme();
+    
+    // Update footer version
+    updateFooterVersion();
     
     const dev = deviceInfo();
     setKV('ua', dev.ua);
