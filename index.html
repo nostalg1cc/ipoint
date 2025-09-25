@@ -60,7 +60,7 @@
     
     /* Alternating background colors for better differentiation */
     .kv:nth-child(even) {
-      background: var(--kv-bg-alt, var(--kv-bg));
+      background: var(--kv-bg-alt) !important;
     }
     
     .kv:hover {
@@ -329,7 +329,7 @@
       --card-bg: rgba(0, 0, 0, 0.8);
       --card-border: linear-gradient(to bottom right, rgba(0,255,0,.2), rgba(0,255,0,.05));
       --kv-bg: rgba(0, 0, 0, 0.6);
-      --kv-bg-alt: rgba(0, 0, 0, 0.4);
+      --kv-bg-alt: rgba(0, 0, 0, 0.2);
       --kv-border: linear-gradient(to bottom right, rgba(0,255,0,.15), rgba(0,255,0,.03));
       --table-border: rgba(0,255,0,.2);
       --hover-bg: rgba(255,255,255,0.05);
@@ -424,7 +424,7 @@
       --card-bg: rgba(150, 161, 196, 0.062);
       --card-border: linear-gradient(to bottom right,rgba(108,99,134,.25),rgba(108,99,134,.05));
       --kv-bg: rgba(150, 161, 196, 0.04);
-      --kv-bg-alt: rgba(150, 161, 196, 0.02);
+      --kv-bg-alt: rgba(150, 161, 196, 0.015);
       --kv-border: linear-gradient(to bottom right,rgba(108,99,134,.2),rgba(108,99,134,.04));
       --table-border: rgba(108,99,134,.25);
       --hover-bg: #ffffff05;
@@ -453,7 +453,7 @@
       --card-bg: rgba(250, 251, 252, 0.85);
       --card-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.25), rgba(160, 174, 192, 0.08));
       --kv-bg: rgba(237, 242, 247, 0.5);
-      --kv-bg-alt: rgba(237, 242, 247, 0.3);
+      --kv-bg-alt: rgba(237, 242, 247, 0.1);
       --kv-border: linear-gradient(to bottom right, rgba(160, 174, 192, 0.2), rgba(160, 174, 192, 0.04));
       --table-border: rgba(160, 174, 192, 0.1);
       --hover-bg: rgba(237, 242, 247, 0.4);
@@ -1128,7 +1128,11 @@
         // Apply loaded settings - with safety checks
         try {
           updateDragDropUI();
-          reorderWidgets(); // Apply saved widget order on load
+          // Ensure grid exists before reordering
+          const grid = document.querySelector('.grid');
+          if (grid && grid.children.length > 0) {
+            reorderWidgets(); // Apply saved widget order on load
+          }
           console.log('IPoint: Drag drop UI updated');
         } catch (e) {
           console.warn('Failed to update drag drop UI:', e);
@@ -3001,7 +3005,7 @@
       // Load customization settings after everything is set up
       setTimeout(() => {
         loadSettings();
-      }, 100);
+      }, 500);
       
     }catch(err){
       console.error('IPoint: Error during initialization:', err);
@@ -3015,7 +3019,7 @@
       // Load customization settings even if data loading failed
       setTimeout(() => {
         loadSettings();
-      }, 100);
+      }, 500);
     }
   }
 
