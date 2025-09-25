@@ -343,6 +343,8 @@
       --security-hover: linear-gradient(90deg, rgba(255,0,0,0.15), transparent 80%);
       --speedtest-bg: linear-gradient(90deg, rgba(0,255,0,0.1), transparent 80%);
       --speedtest-hover: linear-gradient(90deg, rgba(0,255,0,0.15), transparent 80%);
+      --alternate-bg: rgba(255,255,255,0.02);
+      --alternate-hover: rgba(255,255,255,0.05);
     }
     
     /* Tooltip/popup styles */
@@ -438,6 +440,8 @@
       --security-hover: linear-gradient(90deg,#dc262630,transparent 80%);
       --speedtest-bg: linear-gradient(90deg,#7aa2ff20,transparent 80%);
       --speedtest-hover: linear-gradient(90deg,#7aa2ff30,transparent 80%);
+      --alternate-bg: rgba(255,255,255,0.02);
+      --alternate-hover: rgba(255,255,255,0.05);
       
       /* Custom tinting variables */
       --tint-hue: 220;
@@ -467,6 +471,8 @@
       --security-hover: linear-gradient(90deg, rgba(229, 62, 62, 0.2), transparent 80%);
       --speedtest-bg: linear-gradient(90deg, rgba(66, 153, 225, 0.12), transparent 80%);
       --speedtest-hover: linear-gradient(90deg, rgba(66, 153, 225, 0.2), transparent 80%);
+      --alternate-bg: rgba(0,0,0,0.02);
+      --alternate-hover: rgba(0,0,0,0.05);
     }
 
     html,body{height:100%}
@@ -707,8 +713,8 @@
       th:nth-child(6), td:nth-child(6) {display:none}
     }
 
-    /* hide the bottom border on the final row */
-    tbody tr:last-child td{ border-bottom: 0; }
+    /* Remove bottom border from all history table rows */
+    tbody tr td{ border-bottom: 0; }
     #histBody td {padding:20px;}
 
     /* Mobile responsive history body */
@@ -769,6 +775,10 @@
     /* Speed test styling */
     tbody tr.speed-test{background:var(--speedtest-bg);}
     tbody tr.speed-test:hover{background:var(--speedtest-hover);}
+
+    /* Alternating row colors for history entries */
+    tbody tr.history-alternate{background:var(--alternate-bg);}
+    tbody tr.history-alternate:hover{background:var(--alternate-hover);}
 
     .pill{display:inline-block;min-width:86px;text-align:center;border-radius:999px;padding:2px 8px;border:1px solid var(--line);background:var(--badge-bg);transition:all 0.3s ease;
           /* Text truncation for pills */
@@ -1124,11 +1134,16 @@
         widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
         
         console.log('IPoint: Applying settings - dragDropEnabled:', dragDropEnabled, 'customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
+        console.log('IPoint: Loaded widget order:', widgetOrder);
         
         // Apply loaded settings - with safety checks
         try {
           updateDragDropUI();
-          reorderWidgets(); // Apply saved widget order on load
+          // Delay reorderWidgets to ensure DOM is fully ready
+          setTimeout(() => {
+            reorderWidgets(); // Apply saved widget order on load
+            console.log('IPoint: Widget order applied after delay');
+          }, 100);
           console.log('IPoint: Drag drop UI updated');
         } catch (e) {
           console.warn('Failed to update drag drop UI:', e);
@@ -1149,8 +1164,11 @@
         }
         
         try {
-          reorderWidgets();
-          console.log('IPoint: Widgets reordered');
+          // Delay reorderWidgets to ensure DOM is fully ready
+          setTimeout(() => {
+            reorderWidgets();
+            console.log('IPoint: Widgets reordered after delay');
+          }, 100);
         } catch (e) {
           console.warn('Failed to reorder widgets:', e);
         }
@@ -1168,7 +1186,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
-      version: '2.7.0'
+      version: '2.7.1'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     closeSettings();
@@ -1180,7 +1198,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
-      version: '2.7.0',
+      version: '2.7.1',
       exportDate: new Date().toISOString()
     };
     
@@ -1216,7 +1234,11 @@
           updateDragDropUI();
           updateAccentColor(customAccentColor);
           setTheme(currentTheme);
-          reorderWidgets();
+          // Delay reorderWidgets to ensure DOM is fully ready
+          setTimeout(() => {
+            reorderWidgets();
+            console.log('IPoint: Widgets reordered after import');
+          }, 100);
           
           alert('Settings imported successfully!');
         } else {
@@ -1430,17 +1452,21 @@
         grid.insertBefore(draggedElement, target);
       }
       
-      // Update widget order
+      // Update widget order and save immediately
       updateWidgetOrder();
+      console.log('IPoint: Widget order saved after drag and drop');
     }
   }
 
   function updateWidgetOrder() {
     const grid = document.querySelector('.grid');
-    if (!grid) return;
+    if (!grid) {
+      console.warn('IPoint: Grid not found in updateWidgetOrder');
+      return;
+    }
     
     const widgets = Array.from(grid.children);
-    widgetOrder = widgets.map(widget => {
+    const newOrder = widgets.map(widget => {
       const keyElement = widget.querySelector('.k');
       if (keyElement) {
         const text = keyElement.textContent.toLowerCase();
@@ -1456,23 +1482,29 @@
       return 'unknown';
     }).filter(Boolean);
     
+    console.log('IPoint: Current widget order:', newOrder);
+    widgetOrder = newOrder;
+    
     // Save widget order immediately
     const settings = {
       dragDropEnabled,
       customAccentColor,
       currentTheme,
       widgetOrder,
-      version: '2.7.0'
+      version: '2.7.1'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    console.log('IPoint: Widget order saved to localStorage:', widgetOrder);
   }
 
   function reorderWidgets() {
     const grid = document.querySelector('.grid');
     if (!grid) {
-      console.warn('Grid not found, skipping widget reorder');
+      console.warn('IPoint: Grid not found, skipping widget reorder');
       return;
     }
+    
+    console.log('IPoint: Reordering widgets based on saved order:', widgetOrder);
     
     const widgets = Array.from(grid.children);
     const orderedWidgets = [];
@@ -1494,10 +1526,13 @@
       }
     });
     
+    console.log('IPoint: Found widgets:', Object.keys(widgetMap));
+    
     // Reorder based on saved order
     widgetOrder.forEach(type => {
       if (widgetMap[type]) {
         orderedWidgets.push(widgetMap[type]);
+        console.log('IPoint: Added widget to order:', type);
       }
     });
     
@@ -1505,13 +1540,18 @@
     widgets.forEach(widget => {
       if (!orderedWidgets.includes(widget)) {
         orderedWidgets.push(widget);
+        console.log('IPoint: Added remaining widget');
       }
     });
+    
+    console.log('IPoint: Final ordered widgets count:', orderedWidgets.length);
     
     // Update DOM
     orderedWidgets.forEach(widget => {
       grid.appendChild(widget);
     });
+    
+    console.log('IPoint: Widget reordering completed');
   }
 
   function resetWidgetOrder() {
@@ -1531,7 +1571,11 @@
       updateDragDropUI();
       updateAccentColor(customAccentColor);
       setTheme(currentTheme);
-      reorderWidgets();
+      // Delay reorderWidgets to ensure DOM is fully ready
+      setTimeout(() => {
+        reorderWidgets();
+        console.log('IPoint: Widgets reordered after reset');
+      }, 100);
       loadSettingsToUI();
     }
   }
@@ -1603,8 +1647,9 @@
           grid.insertBefore(draggedElement, target);
         }
         
-        // Update widget order
+        // Update widget order and save immediately
         updateWidgetOrder();
+        console.log('IPoint: Widget order saved after mobile drag and drop');
       }
       
       // Clean up
@@ -2475,8 +2520,14 @@
     const total = rows.length;
     const visibleRows = rows.slice(0, Math.min(histVisible, total));
 
-    visibleRows.forEach(h => {
+    visibleRows.forEach((h, index) => {
       const tr = document.createElement('tr');
+      
+      // Add alternating background class (every 2nd entry is lighter)
+      if (index % 2 === 1) {
+        tr.classList.add('history-alternate');
+      }
+      
       if (h.securityAlert) {
         tr.classList.add('security-alert');
       } else if (h.speedTest) {
@@ -3072,7 +3123,7 @@
     window.addEventListener('load', () => {
       // Create a simple service worker inline
       const swCode = `
-        const CACHE_NAME = 'ipoint-v2.6.1';
+        const CACHE_NAME = 'ipoint-v2.7.1';
         const urlsToCache = [
           '/',
           'https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css',
