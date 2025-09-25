@@ -1778,6 +1778,11 @@
     }
   }
 
+  // Essential utility functions
+  const $ = (id) => document.getElementById(id);
+  const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
+  const fmtDate = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit'}).format(d);
+  const fmtTime = (d) => new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
 
   function saveWidgetSettings() {
     const settings = {
