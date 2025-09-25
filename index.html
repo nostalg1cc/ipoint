@@ -901,6 +901,7 @@
       min-height: 160px;
       display: flex;
       flex-direction: column;
+      height: 100%;
     }
     
     .kv:has(#miniMap)[style*="grid-column: span 2"] {
@@ -916,11 +917,28 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      height: 100%;
+      min-height: 0;
     }
     
     .kv:has(#miniMap) #miniMap {
       flex: 1;
       min-height: 0;
+      height: 100%;
+      width: 100%;
+    }
+    
+    /* Ensure grid items fill their space */
+    .grid .kv {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .grid .kv .v {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     /* small style for IPv6 line under IPv4 */
@@ -1130,10 +1148,10 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.9.0 - Customizable Dashboard & Themes</div>
+    <div>IPoint v2.10.0 - Customizable Dashboard & Themes</div>
     <div class="version-memo">
       <!-- AI Memo: Added drag-and-drop widgets, custom themes, and settings popup -->
-      <!-- Last updated: Fixed map space distribution and delete button visibility -->
+      <!-- Last updated: Fixed map container filling and equal widget sizing -->
     </div>
     <div style="margin-top: 8px;">
       <button onclick="openSettings()" style="background: var(--button-bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; color: var(--text); font-size: 11px; cursor: pointer; transition: all 0.2s ease;">
@@ -1308,7 +1326,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.9.0'
+      version: '2.10.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     closeSettings();
@@ -1321,7 +1339,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.9.0',
+      version: '2.10.0',
       exportDate: new Date().toISOString()
     };
     
@@ -1347,7 +1365,7 @@
       try {
         const settings = JSON.parse(e.target.result);
         
-        if (settings.version && settings.version.startsWith('2.9')) {
+        if (settings.version && settings.version.startsWith('2.10')) {
           dragDropEnabled = settings.dragDropEnabled || false;
           customAccentColor = settings.customAccentColor || '#7aa2ff';
           currentTheme = settings.currentTheme || 'dark';
@@ -1666,7 +1684,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.9.0'
+      version: '2.10.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
@@ -1951,71 +1969,57 @@
     const hasMap = !!mapWidget;
     const visibleCount = visibleWidgets.length;
     
-    // Default: All widgets equal size
-    let columns = 4;
-    let mapSpan = 1;
+    console.log('IPoint: Redistributing space - visible widgets:', visibleCount, 'has map:', hasMap);
     
-    if (visibleCount <= 2) {
-      columns = 2;
-      mapSpan = hasMap ? 1 : 1; // Map takes normal space
-    } else if (visibleCount <= 3) {
-      columns = 3;
-      mapSpan = hasMap ? 1 : 1; // Map takes normal space
-    } else if (visibleCount <= 4) {
-      columns = 4;
-      mapSpan = hasMap ? 1 : 1; // Map takes normal space
+    // Simple logic: All widgets equal size by default, map gets priority when space is available
+    if (visibleCount <= 4) {
+      // 4 or fewer widgets: All equal size, 4 columns
+      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      if (hasMap) {
+        mapWidget.style.gridColumn = 'span 1';
+        mapWidget.style.gridRow = 'span 1';
+      }
     } else if (visibleCount <= 6) {
-      columns = 3;
-      mapSpan = hasMap ? 2 : 1; // Map spans 2 columns when more widgets
+      // 5-6 widgets: Map spans 2 columns, others 1 column each
+      grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+      if (hasMap) {
+        mapWidget.style.gridColumn = 'span 2';
+        mapWidget.style.gridRow = 'span 1';
+      }
     } else {
-      columns = 4;
-      mapSpan = hasMap ? 2 : 1; // Map spans 2 columns when many widgets
+      // 7+ widgets: Map spans 2 columns, others 1 column each
+      grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      if (hasMap) {
+        mapWidget.style.gridColumn = 'span 2';
+        mapWidget.style.gridRow = 'span 1';
+      }
     }
     
-    // Apply grid template with equal sizing
-    grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-    
-    // Apply map spanning if map exists
-    if (hasMap && mapWidget) {
-      mapWidget.style.gridColumn = `span ${mapSpan}`;
-      mapWidget.style.gridRow = 'span 1';
-      
-      // Adjust map height based on span
+    // Force map to fill its container completely
+    if (hasMap) {
       const mapElement = mapWidget.querySelector('#miniMap');
       if (mapElement) {
-        if (mapSpan === 2) {
-          mapElement.style.height = '200px'; // Taller when spanning 2 columns
-        } else {
-          mapElement.style.height = '160px'; // Normal height
+        // Remove any fixed height and let it fill the container
+        mapElement.style.height = '100%';
+        mapElement.style.width = '100%';
+        mapElement.style.minHeight = '160px';
+        
+        // Ensure the map container fills its space
+        const mapContainer = mapWidget.querySelector('.v');
+        if (mapContainer) {
+          mapContainer.style.height = '100%';
+          mapContainer.style.display = 'flex';
+          mapContainer.style.flexDirection = 'column';
         }
       }
     }
     
-    // Reinitialize map if it exists
-    const mapElement = document.querySelector('#miniMap');
-    if (mapElement && window.mini) {
-      // Use multiple timeouts to ensure DOM has fully updated
-      setTimeout(() => {
-        try {
-          window.mini.invalidateSize();
-          console.log('IPoint: Map invalidated and resized (first attempt)');
-        } catch (error) {
-          console.warn('IPoint: Error resizing map (first attempt):', error);
-        }
-      }, 100);
-      
-      // Second attempt after longer delay
-      setTimeout(() => {
-        try {
-          window.mini.invalidateSize();
-          console.log('IPoint: Map invalidated and resized (second attempt)');
-        } catch (error) {
-          console.warn('IPoint: Error resizing map (second attempt):', error);
-        }
-      }, 300);
-    }
+    // Reinitialize map after a delay to ensure DOM is updated
+    setTimeout(() => {
+      reinitializeMap();
+    }, 100);
     
-    console.log('IPoint: Space redistributed - visible widgets:', visibleCount, 'columns:', columns, 'map span:', mapSpan);
+    console.log('IPoint: Space redistributed - grid columns:', grid.style.gridTemplateColumns);
   }
   
   // Helper function to reinitialize map
@@ -2101,7 +2105,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.9.0'
+      version: '2.10.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
