@@ -430,6 +430,12 @@
       --security-hover: linear-gradient(90deg,#dc262630,transparent 80%);
       --speedtest-bg: linear-gradient(90deg,#7aa2ff20,transparent 80%);
       --speedtest-hover: linear-gradient(90deg,#7aa2ff30,transparent 80%);
+      
+      /* Custom tinting variables */
+      --tint-hue: 220;
+      --tint-saturation: 70%;
+      --tint-lightness: 60%;
+      --tint-alpha: 0.1;
     }
 
     [data-theme="light"] {
@@ -490,6 +496,9 @@
       -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
+    
+    /* Apply tinting to cards */
+    .card::after{content:"";position:absolute;inset:0;border-radius:inherit;background:hsla(var(--tint-hue), var(--tint-saturation), var(--tint-lightness), var(--tint-alpha));pointer-events:none;z-index:1;transition:background 0.3s ease}
 
     
     /* Mobile responsive grid - always 2 columns on mobile */
@@ -501,6 +510,7 @@
       -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
+    .kv::after{content:"";position:absolute;inset:0;border-radius:inherit;background:hsla(var(--tint-hue), var(--tint-saturation), var(--tint-lightness), calc(var(--tint-alpha) * 0.5));pointer-events:none;z-index:0;transition:background 0.3s ease}
     .kv:has(#miniMap) { padding: 0; }
     
     /* Mobile responsive kv */
@@ -881,10 +891,7 @@
         </div>
         <div class="row" id="changeBadges" style="gap:6px">
           <div class="badge-container collapsed" id="badgeContainer">
-            <div class="theme-toggle" onclick="toggleTheme()">
-              <span id="themeIcon">🌙</span>
-              <span id="themeText">Dark</span>
-            </div>
+            <!-- Theme toggle moved to settings -->
           </div>
         </div>
       </div>
@@ -1211,12 +1218,51 @@
   function updateAccentColor(color) {
     customAccentColor = color;
     
+    // Convert hex to HSL for tinting
+    const hsl = hexToHsl(color);
+    
     // Update CSS custom properties
     const root = document.documentElement;
     root.style.setProperty('--accent', color);
+    root.style.setProperty('--tint-hue', hsl.h);
+    root.style.setProperty('--tint-saturation', hsl.s + '%');
+    root.style.setProperty('--tint-lightness', hsl.l + '%');
     
     // Update theme preview
     updateThemePreview();
+  }
+
+  function hexToHsl(hex) {
+    // Remove # if present
+    hex = hex.replace('#', '');
+    
+    // Parse hex values
+    const r = parseInt(hex.substr(0, 2), 16) / 255;
+    const g = parseInt(hex.substr(2, 2), 16) / 255;
+    const b = parseInt(hex.substr(4, 2), 16) / 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    
+    if (max === min) {
+      h = s = 0; // achromatic
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    
+    return {
+      h: Math.round(h * 360),
+      s: Math.round(s * 100),
+      l: Math.round(l * 100)
+    };
   }
 
   function updateThemePreview() {
@@ -1359,6 +1405,16 @@
       }
       return 'unknown';
     }).filter(Boolean);
+    
+    // Save widget order immediately
+    const settings = {
+      dragDropEnabled,
+      customAccentColor,
+      currentTheme,
+      widgetOrder,
+      version: '2.7.0'
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
 
   function reorderWidgets() {
@@ -2154,14 +2210,8 @@
   function renderBadges() {
     const container = $('badgeContainer');
     
-    // Store theme toggle
-    const themeToggle = container.querySelector('.theme-toggle');
-    
-    // Clear ALL content except theme toggle
+    // Clear ALL content
     container.innerHTML = '';
-    if (themeToggle) {
-      container.appendChild(themeToggle);
-    }
     
     // Determine how many badges to show
     const badgesToShow = badgeContainerExpanded ? allBadges : allBadges.slice(0, maxVisibleBadges);
