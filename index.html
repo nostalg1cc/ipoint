@@ -1114,11 +1114,30 @@
         currentTheme = settings.currentTheme || 'dark';
         widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
         
-        // Apply loaded settings
-        updateDragDropUI();
-        updateAccentColor(customAccentColor);
-        setTheme(currentTheme);
-        reorderWidgets();
+        // Apply loaded settings - with safety checks
+        try {
+          updateDragDropUI();
+        } catch (e) {
+          console.warn('Failed to update drag drop UI:', e);
+        }
+        
+        try {
+          updateAccentColor(customAccentColor);
+        } catch (e) {
+          console.warn('Failed to update accent color:', e);
+        }
+        
+        try {
+          setTheme(currentTheme);
+        } catch (e) {
+          console.warn('Failed to set theme:', e);
+        }
+        
+        try {
+          reorderWidgets();
+        } catch (e) {
+          console.warn('Failed to reorder widgets:', e);
+        }
       }
     } catch (e) {
       console.warn('Failed to load settings:', e);
@@ -1280,14 +1299,17 @@
 
   function updateDragDropUI() {
     const grid = document.querySelector('.grid');
-    if (grid) {
-      if (dragDropEnabled) {
-        grid.classList.add('draggable');
-        attachDragDropListeners();
-      } else {
-        grid.classList.remove('draggable');
-        removeDragDropListeners();
-      }
+    if (!grid) {
+      console.warn('Grid not found, skipping drag drop UI update');
+      return;
+    }
+    
+    if (dragDropEnabled) {
+      grid.classList.add('draggable');
+      attachDragDropListeners();
+    } else {
+      grid.classList.remove('draggable');
+      removeDragDropListeners();
     }
   }
 
@@ -1419,7 +1441,10 @@
 
   function reorderWidgets() {
     const grid = document.querySelector('.grid');
-    if (!grid) return;
+    if (!grid) {
+      console.warn('Grid not found, skipping widget reorder');
+      return;
+    }
     
     const widgets = Array.from(grid.children);
     const orderedWidgets = [];
@@ -2064,15 +2089,17 @@
   function updateThemeToggle(theme) {
     const icon = $('themeIcon');
     const text = $('themeText');
-    if (theme === 'light') {
-      icon.textContent = '🌙';
-      text.textContent = 'Dark';
-    } else if (theme === 'oled') {
-      icon.textContent = '☀️';
-      text.textContent = 'Light';
-    } else {
-      icon.textContent = '☀️';
-      text.textContent = 'Light';
+    if (icon && text) {
+      if (theme === 'light') {
+        icon.textContent = '🌙';
+        text.textContent = 'Dark';
+      } else if (theme === 'oled') {
+        icon.textContent = '☀️';
+        text.textContent = 'Light';
+      } else {
+        icon.textContent = '☀️';
+        text.textContent = 'Light';
+      }
     }
   }
 
@@ -2818,9 +2845,6 @@
     // Initialize theme first
     initTheme();
     
-    // Load customization settings
-    loadSettings();
-    
     const dev = deviceInfo();
     setKV('ua', dev.ua);
 
@@ -2834,6 +2858,9 @@
       diffBadges(last, data);
 
       fillUI(data);
+
+      // Load customization settings after UI is populated
+      loadSettings();
 
       // Save visit (normal entry, not security alert)
       appendHistory({
@@ -2865,6 +2892,9 @@
       $('flag').innerHTML = '';
       // keep existing history visible
       renderHistory();
+      
+      // Load customization settings even if data loading failed
+      loadSettings();
     }
   }
 
