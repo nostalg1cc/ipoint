@@ -124,9 +124,20 @@
     /* Ensure remove button is visible */
     .kv {
       overflow: visible !important;
+      position: relative;
     }
     
     .kv.wiggle {
+      overflow: visible !important;
+      position: relative;
+    }
+    
+    /* Make sure the grid doesn't clip the buttons */
+    .grid {
+      overflow: visible !important;
+    }
+    
+    .grid.edit-mode {
       overflow: visible !important;
     }
     
@@ -1274,7 +1285,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.7.0'
+      version: '2.8.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     closeSettings();
@@ -1287,7 +1298,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.7.0',
+      version: '2.8.0',
       exportDate: new Date().toISOString()
     };
     
@@ -1313,7 +1324,7 @@
       try {
         const settings = JSON.parse(e.target.result);
         
-        if (settings.version && settings.version.startsWith('2.7')) {
+        if (settings.version && settings.version.startsWith('2.8')) {
           dragDropEnabled = settings.dragDropEnabled || false;
           customAccentColor = settings.customAccentColor || '#7aa2ff';
           currentTheme = settings.currentTheme || 'dark';
@@ -1632,7 +1643,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.7.0'
+      version: '2.8.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
@@ -1873,6 +1884,11 @@
     // Redistribute space
     redistributeSpace();
     
+    // Force map reinitialization after widget removal
+    setTimeout(() => {
+      reinitializeMap();
+    }, 200);
+    
     console.log('IPoint: Widget removed:', widgetType);
   }
 
@@ -1927,15 +1943,25 @@
     // Reinitialize map if it exists and space changed
     const mapElement = document.querySelector('#miniMap');
     if (mapElement && window.mini) {
-      // Use setTimeout to ensure DOM has updated
+      // Use multiple timeouts to ensure DOM has fully updated
       setTimeout(() => {
         try {
           window.mini.invalidateSize();
-          console.log('IPoint: Map invalidated and resized');
+          console.log('IPoint: Map invalidated and resized (first attempt)');
         } catch (error) {
-          console.warn('IPoint: Error resizing map:', error);
+          console.warn('IPoint: Error resizing map (first attempt):', error);
         }
       }, 100);
+      
+      // Second attempt after longer delay
+      setTimeout(() => {
+        try {
+          window.mini.invalidateSize();
+          console.log('IPoint: Map invalidated and resized (second attempt)');
+        } catch (error) {
+          console.warn('IPoint: Error resizing map (second attempt):', error);
+        }
+      }, 300);
     }
     
     console.log('IPoint: Space redistributed - visible widgets:', visibleCount, 'columns:', columns);
@@ -1960,11 +1986,18 @@
   function setupMapResizeObserver() {
     const mapContainer = document.querySelector('.kv:has(#miniMap)');
     if (mapContainer && window.ResizeObserver) {
-      const resizeObserver = new ResizeObserver(() => {
-        reinitializeMap();
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+          if (entry.target === mapContainer) {
+            console.log('IPoint: Map container resized, reinitializing map');
+            reinitializeMap();
+          }
+        }
       });
       resizeObserver.observe(mapContainer);
       console.log('IPoint: Map resize observer set up');
+    } else {
+      console.warn('IPoint: ResizeObserver not available or map container not found');
     }
   }
 
@@ -2002,6 +2035,11 @@
     // Redistribute space
     redistributeSpace();
     
+    // Force map reinitialization after widget re-addition
+    setTimeout(() => {
+      reinitializeMap();
+    }, 200);
+    
     console.log('IPoint: Widget re-added:', widgetType);
   }
 
@@ -2012,7 +2050,7 @@
       currentTheme,
       widgetOrder,
       removedWidgets,
-      version: '2.7.0'
+      version: '2.8.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }
