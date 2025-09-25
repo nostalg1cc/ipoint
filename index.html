@@ -1433,7 +1433,7 @@
     }
   }
 
-  // iOS-style Drag and Drop Functions
+  // Simplified Drag and Drop Functions
   function attachDragDropListeners() {
     const grid = document.querySelector('.grid');
     if (!grid) return;
@@ -1450,7 +1450,7 @@
       widget.removeEventListener('dragover', handleDragOver);
       widget.removeEventListener('drop', handleDrop);
       
-      // Add new iOS-style listeners
+      // Add simplified listeners
       widget.addEventListener('mousedown', handleMouseDown);
       widget.addEventListener('touchstart', handleTouchStart, { passive: false });
       widget.addEventListener('touchend', handleTouchEnd);
@@ -1479,39 +1479,41 @@
     });
   }
 
-  // iOS-style event handlers
+  // Simplified event handlers
   function handleMouseDown(e) {
-    if (!dragDropEnabled || editMode) return;
+    if (!dragDropEnabled) return;
     
     const widget = e.target.closest('.kv');
     if (!widget) return;
     
-    // Prevent default to avoid text selection
-    e.preventDefault();
-    
-    holdTimer = setTimeout(() => {
-      enterEditMode();
-      startWiggle(widget);
-    }, 3000); // 3 seconds hold to enter edit mode
+    // If not in edit mode, start hold timer
+    if (!editMode) {
+      e.preventDefault();
+      holdTimer = setTimeout(() => {
+        enterEditMode();
+        startWiggle(widget);
+      }, 1000); // 1 second hold to enter edit mode
+    }
   }
 
   function handleTouchStart(e) {
-    if (!dragDropEnabled || editMode) return;
+    if (!dragDropEnabled) return;
     
     const widget = e.target.closest('.kv');
     if (!widget) return;
     
-    // Prevent default scrolling
-    e.preventDefault();
-    
-    holdTimer = setTimeout(() => {
-      enterEditMode();
-      startWiggle(widget);
-    }, 3000); // 3 seconds hold to enter edit mode
+    // If not in edit mode, start hold timer
+    if (!editMode) {
+      e.preventDefault();
+      holdTimer = setTimeout(() => {
+        enterEditMode();
+        startWiggle(widget);
+      }, 1000); // 1 second hold to enter edit mode
+    }
   }
 
   function handleTouchEnd(e) {
-    // Clear hold timer if touch ends before 3 seconds
+    // Clear hold timer if touch ends before 1 second
     if (holdTimer) {
       clearTimeout(holdTimer);
       holdTimer = null;
@@ -1534,14 +1536,7 @@
     draggedElement = e.target.closest('.kv');
     if (!draggedElement) return;
     
-    // Keep wiggle enabled during drag
     draggedElement.classList.add('dragging');
-    draggedElement.classList.add('wiggle');
-    
-    // Create placeholder
-    dragPlaceholder = document.createElement('div');
-    dragPlaceholder.className = 'kv drag-placeholder';
-    dragPlaceholder.style.height = draggedElement.offsetHeight + 'px';
     
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', draggedElement.outerHTML);
@@ -1552,18 +1547,9 @@
     
     if (draggedElement) {
       draggedElement.classList.remove('dragging');
-      // Keep wiggle enabled in edit mode
-      if (editMode) {
-        draggedElement.classList.add('wiggle');
-      }
-    }
-    
-    if (dragPlaceholder && dragPlaceholder.parentNode) {
-      dragPlaceholder.parentNode.removeChild(dragPlaceholder);
     }
     
     draggedElement = null;
-    dragPlaceholder = null;
   }
 
   function handleDragOver(e) {
@@ -1730,6 +1716,8 @@
     
     // Add click outside to exit edit mode
     document.addEventListener('click', handleClickOutside);
+    
+    console.log('IPoint: Entered edit mode');
   }
 
   function exitEditMode() {
@@ -1874,9 +1862,11 @@
       widget.style.display !== 'none'
     );
     
-    // Check if map widget is visible
-    const mapWidget = visibleWidgets.find(widget => widget.querySelector('#miniMap'));
-    const hasMap = !!mapWidget;
+    // Reset all grid spans first
+    visibleWidgets.forEach(widget => {
+      widget.style.gridColumn = '';
+      widget.style.gridRow = '';
+    });
     
     // Adjust grid columns based on visible widgets
     const visibleCount = visibleWidgets.length;
@@ -1895,55 +1885,7 @@
     // Apply grid template
     grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
     
-    // Special handling for map widget
-    if (hasMap) {
-      // Calculate how many widgets the map should span
-      let mapSpan = 1;
-      
-      if (visibleCount <= 2) {
-        // If only 2 widgets, map takes half the space
-        mapSpan = 1;
-      } else if (visibleCount <= 4) {
-        // If 3-4 widgets, map can span 2 columns
-        mapSpan = 2;
-      } else if (visibleCount <= 6) {
-        // If 5-6 widgets, map can span 2-3 columns
-        mapSpan = Math.min(2, Math.ceil(visibleCount / 3));
-      } else {
-        // If 7+ widgets, map spans 2 columns
-        mapSpan = 2;
-      }
-      
-      // Apply grid span to map widget
-      if (mapWidget) {
-        mapWidget.style.gridColumn = `span ${mapSpan}`;
-        mapWidget.style.gridRow = 'span 1';
-        
-        // Adjust map height based on available space
-        const mapElement = mapWidget.querySelector('#miniMap');
-        if (mapElement) {
-          let newHeight = '160px';
-          if (visibleCount <= 2) {
-            newHeight = '200px';
-          } else if (visibleCount <= 4) {
-            newHeight = '180px';
-          } else {
-            newHeight = '160px';
-          }
-          
-          mapElement.style.height = newHeight;
-          
-          // Reinitialize map if it exists
-          if (window.mini) {
-            setTimeout(() => {
-              window.mini.invalidateSize();
-            }, 100);
-          }
-        }
-      }
-    }
-    
-    console.log('IPoint: Space redistributed - visible widgets:', visibleCount, 'columns:', columns, 'map span:', mapSpan || 1);
+    console.log('IPoint: Space redistributed - visible widgets:', visibleCount, 'columns:', columns);
   }
 
   function reAddWidget(widgetType) {
