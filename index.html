@@ -315,66 +315,85 @@
       gap: 12px;
       margin: 16px 0;
       padding: 0 10px;
+      justify-content: center;
     }
     
     .twitch-channel {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: var(--button-bg);
-      border: 2px solid var(--line);
-      border-radius: 12px;
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
       cursor: pointer;
       transition: all 0.2s ease;
       text-decoration: none;
-      color: var(--text);
+      border: 3px solid var(--line);
+      overflow: hidden;
     }
     
     .twitch-channel:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transform: translateY(-3px) scale(1.1);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     }
     
     .twitch-channel.live {
       border-color: #00ff00;
-      background: rgba(0, 255, 0, 0.1);
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
     }
     
     .twitch-channel.offline {
       border-color: var(--muted);
-      opacity: 0.7;
+      opacity: 0.6;
     }
     
     .twitch-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
+      width: 100%;
+      height: 100%;
       object-fit: cover;
+      border-radius: 50%;
     }
     
-    .twitch-status {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    
-    .twitch-username {
-      font-weight: 600;
-      font-size: 13px;
-    }
-    
-    .twitch-live-status {
+    .twitch-tooltip {
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 6px;
       font-size: 11px;
-      font-weight: 500;
+      font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 1000;
+      border: 1px solid var(--line);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     
-    .twitch-live-status.live {
-      color: #00ff00;
+    .twitch-channel:hover .twitch-tooltip {
+      opacity: 1;
+      visibility: visible;
     }
     
-    .twitch-live-status.offline {
-      color: var(--muted);
+    .twitch-live-dot {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--card-bg);
+    }
+    
+    .twitch-live-dot.live {
+      background: #00ff00;
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+    }
+    
+    .twitch-live-dot.offline {
+      background: var(--muted);
     }
     
     .twitch-channels-list {
@@ -999,16 +1018,16 @@
             <div id="greetSub" class="hint"></div>
           </div>
         </div>
-      <!-- Twitch Live Indicators -->
-      <div id="twitchIndicators" class="twitch-indicators">
-        <!-- Twitch channel indicators will be displayed here -->
-      </div>
-      
       <div class="row" id="changeBadges" style="gap:6px">
         <div class="badge-container collapsed" id="badgeContainer">
           <!-- Theme toggle moved to settings -->
         </div>
       </div>
+      </div>
+
+      <!-- Twitch Live Indicators -->
+      <div id="twitchIndicators" class="twitch-indicators">
+        <!-- Twitch channel indicators will be displayed here -->
       </div>
 
       <div class="grid" style="margin-top:-2px">
@@ -1419,36 +1438,31 @@
   
   async function checkTwitchChannelStatus(channelName) {
     try {
-      // Use Twitch's public API without requiring authentication
-      const response = await fetch(`https://www.twitch.tv/${channelName}`, {
-        method: 'HEAD',
-        mode: 'no-cors'
-      });
+      // Use a CORS proxy to access Twitch API
+      const proxyUrl = 'https://api.allorigins.win/raw?url=';
+      const twitchApiUrl = `https://api.twitch.tv/helix/streams?user_login=${channelName}`;
       
-      // Since we can't access the response due to CORS, we'll use a different approach
-      // We'll check if the channel exists by trying to fetch their profile info
-      const profileResponse = await fetch(`https://api.twitch.tv/kraken/users?login=${channelName}`, {
+      // First, get user info
+      const userResponse = await fetch(proxyUrl + encodeURIComponent(`https://api.twitch.tv/helix/users?login=${channelName}`), {
         headers: {
-          'Accept': 'application/vnd.twitchtv.v5+json',
-          'Client-ID': 'jzkbprff40iqj646a697cyrvl0zt2m6' // Public client ID
+          'Client-ID': 'jzkbprff40iqj646a697cyrvl0zt2m6'
         }
       });
       
-      if (!profileResponse.ok) {
+      if (!userResponse.ok) {
         throw new Error('Channel not found');
       }
       
-      const profileData = await profileResponse.json();
-      const user = profileData.users[0];
+      const userData = await userResponse.json();
+      const user = userData.data[0];
       
       if (!user) {
         throw new Error('Channel not found');
       }
       
       // Check if channel is live
-      const streamResponse = await fetch(`https://api.twitch.tv/kraken/streams/${user._id}`, {
+      const streamResponse = await fetch(proxyUrl + encodeURIComponent(twitchApiUrl), {
         headers: {
-          'Accept': 'application/vnd.twitchtv.v5+json',
           'Client-ID': 'jzkbprff40iqj646a697cyrvl0zt2m6'
         }
       });
@@ -1458,13 +1472,13 @@
       
       if (streamResponse.ok) {
         const streamInfo = await streamResponse.json();
-        isLive = streamInfo.stream !== null;
-        streamData = streamInfo.stream;
+        isLive = streamInfo.data && streamInfo.data.length > 0;
+        streamData = isLive ? streamInfo.data[0] : null;
       }
       
       return {
         username: user.display_name,
-        avatar: user.logo,
+        avatar: user.profile_image_url,
         isLive: isLive,
         streamData: streamData,
         profileUrl: `https://www.twitch.tv/${channelName}`,
@@ -1474,15 +1488,32 @@
       
     } catch (error) {
       console.warn(`Failed to check Twitch channel ${channelName}:`, error);
-      return {
-        username: channelName,
-        avatar: `https://static-cdn.jtvnw.net/jtv_user_pictures/placeholder-avatar-300x300.png`,
-        isLive: false,
-        streamData: null,
-        profileUrl: `https://www.twitch.tv/${channelName}`,
-        liveUrl: `https://www.twitch.tv/${channelName}`,
-        vodUrl: `https://www.twitch.tv/${channelName}/videos`
-      };
+      
+      // Fallback: try to get basic info without API
+      try {
+        // Use a simple approach to get avatar
+        const avatarUrl = `https://static-cdn.jtvnw.net/jtv_user_pictures/${channelName}-profile_image-300x300.png`;
+        
+        return {
+          username: channelName,
+          avatar: avatarUrl,
+          isLive: false, // Assume offline if we can't check
+          streamData: null,
+          profileUrl: `https://www.twitch.tv/${channelName}`,
+          liveUrl: `https://www.twitch.tv/${channelName}`,
+          vodUrl: `https://www.twitch.tv/${channelName}/videos`
+        };
+      } catch (fallbackError) {
+        return {
+          username: channelName,
+          avatar: `https://static-cdn.jtvnw.net/jtv_user_pictures/placeholder-avatar-300x300.png`,
+          isLive: false,
+          streamData: null,
+          profileUrl: `https://www.twitch.tv/${channelName}`,
+          liveUrl: `https://www.twitch.tv/${channelName}`,
+          vodUrl: `https://www.twitch.tv/${channelName}/videos`
+        };
+      }
     }
   }
   
@@ -1507,13 +1538,15 @@
       indicator.href = data.isLive ? data.liveUrl : data.vodUrl;
       indicator.target = '_blank';
       
+      const statusText = data.isLive ? '🔴 LIVE' : '⚫ Offline';
+      const gameTitle = data.streamData ? ` - ${data.streamData.game_name}` : '';
+      
       indicator.innerHTML = `
         <img src="${data.avatar}" alt="${data.username}" class="twitch-avatar" onerror="this.src='https://static-cdn.jtvnw.net/jtv_user_pictures/placeholder-avatar-300x300.png'">
-        <div class="twitch-status">
-          <div class="twitch-username">${data.username}</div>
-          <div class="twitch-live-status ${data.isLive ? 'live' : 'offline'}">
-            ${data.isLive ? '🔴 LIVE' : '⚫ Offline'}
-          </div>
+        <div class="twitch-live-dot ${data.isLive ? 'live' : 'offline'}"></div>
+        <div class="twitch-tooltip">
+          ${data.username}<br>
+          ${statusText}${gameTitle}
         </div>
       `;
       
