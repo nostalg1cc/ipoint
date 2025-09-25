@@ -33,6 +33,311 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
+    /* Drag and Drop Styles */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin: 10px;
+      gap: 10px;
+    }
+    
+    .grid.dragging {
+      cursor: grabbing;
+    }
+    
+    .kv {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      border-radius: 10px;
+      background: var(--kv-bg);
+      transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      cursor: grab;
+      user-select: none;
+    }
+    
+    .kv:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .kv.dragging {
+      cursor: grabbing;
+      transform: rotate(5deg) scale(1.05);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    
+    .kv.drag-over {
+      border: 2px dashed var(--accent);
+      background: var(--accent)10;
+    }
+    
+    .kv.drag-placeholder {
+      opacity: 0.5;
+      background: var(--line);
+      border: 2px dashed var(--muted);
+    }
+    
+    /* Settings Popup Styles */
+    .settings-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .settings-popup.visible {
+      display: flex;
+    }
+    
+    .settings-content {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    
+    .settings-content::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: var(--card-border);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    
+    .settings-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    
+    .settings-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    
+    .settings-close:hover {
+      background: var(--hover-bg);
+      color: var(--text);
+    }
+    
+    .settings-section {
+      margin-bottom: 24px;
+    }
+    
+    .settings-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .settings-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    
+    .settings-label {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+    }
+    
+    .settings-input {
+      background: var(--button-bg);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+      transition: all 0.2s ease;
+      min-width: 120px;
+    }
+    
+    .settings-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent)20;
+    }
+    
+    .color-picker {
+      width: 40px;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: none;
+    }
+    
+    .theme-preview {
+      width: 100%;
+      height: 60px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      margin-top: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .theme-preview::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      opacity: 0.8;
+    }
+    
+    .theme-preview::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      background: var(--accent);
+      border-radius: 4px;
+      opacity: 0.6;
+    }
+    
+    .settings-button {
+      background: var(--button-bg);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 16px;
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    
+    .settings-button:hover {
+      background: var(--button-hover);
+      transform: translateY(-1px);
+    }
+    
+    .settings-button.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    
+    .settings-button.primary:hover {
+      background: var(--accent);
+      opacity: 0.9;
+    }
+    
+    .settings-button-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .settings-toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: var(--line);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .settings-toggle.active {
+      background: var(--accent);
+    }
+    
+    .settings-toggle::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    
+    .settings-toggle.active::after {
+      transform: translateX(20px);
+    }
+    
+    /* OLED Black Theme */
+    [data-theme="oled"] {
+      --bg: #000000; 
+      --panel: #000000; 
+      --text: #ffffff; 
+      --muted: #666666; 
+      --accent: #00ff00;
+      --good: #00ff00; 
+      --warn: #ffff00; 
+      --bad: #ff0000; 
+      --line: #333333;
+      --map-filter: grayscale(100%) contrast(150%);
+      --card-bg: rgba(0, 0, 0, 0.8);
+      --card-border: linear-gradient(to bottom right, rgba(0,255,0,.2), rgba(0,255,0,.05));
+      --kv-bg: rgba(0, 0, 0, 0.6);
+      --kv-border: linear-gradient(to bottom right, rgba(0,255,0,.15), rgba(0,255,0,.03));
+      --table-border: rgba(0,255,0,.2);
+      --hover-bg: rgba(255,255,255,0.05);
+      --shade-bg: radial-gradient(1200px 800px at 50% 20%, transparent 0%, rgba(0,0,0,0.8) 60%, rgba(0,0,0,0.95) 100%);
+      --badge-bg: rgba(255,255,255,0.1);
+      --button-bg: #111111;
+      --button-hover: #222222;
+      --changed-bg: linear-gradient(90deg, rgba(255,255,0,0.1), transparent 80%);
+      --changed-hover: linear-gradient(90deg, rgba(255,255,0,0.15), transparent 80%);
+      --security-bg: linear-gradient(90deg, rgba(255,0,0,0.1), transparent 80%);
+      --security-hover: linear-gradient(90deg, rgba(255,0,0,0.15), transparent 80%);
+      --speedtest-bg: linear-gradient(90deg, rgba(0,255,0,0.1), transparent 80%);
+      --speedtest-hover: linear-gradient(90deg, rgba(0,255,0,0.15), transparent 80%);
+    }
+    
     /* Tooltip/popup styles */
     .date-popup {
       position: fixed;
@@ -186,14 +491,12 @@
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:-1;transition:background 0.3s ease}
 
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);margin:10px;gap:10px}
     
     /* Mobile responsive grid - always 2 columns on mobile */
     @media (max-width: 768px) {
       .grid{grid-template-columns:repeat(2,1fr);margin:8px;gap:8px}
     }
 
-    .kv{position:relative;overflow:hidden;display:flex;flex-direction:column;padding:10px;border-radius:10px;background:var(--kv-bg);transition:background 0.3s ease}
     .kv::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:var(--kv-border);
       -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
       mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -683,10 +986,78 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.6.1 - Perfect UI Alignment & Polish</div>
+    <div>IPoint v2.7.0 - Customizable Dashboard & Themes</div>
     <div class="version-memo">
-      <!-- AI Memo: Perfect alignment between badges and theme toggle with consistent styling -->
-      <!-- Last updated: Final polish - matching padding, height, and visual consistency -->
+      <!-- AI Memo: Added drag-and-drop widgets, custom themes, and settings popup -->
+      <!-- Last updated: Advanced UI/UX with customization options -->
+    </div>
+    <div style="margin-top: 8px;">
+      <button onclick="openSettings()" style="background: var(--button-bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; color: var(--text); font-size: 11px; cursor: pointer; transition: all 0.2s ease;">
+        ⚙️ Settings
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings Popup -->
+  <div id="settingsPopup" class="settings-popup">
+    <div class="settings-content">
+      <div class="settings-header">
+        <div class="settings-title">Settings</div>
+        <button class="settings-close" onclick="closeSettings()">×</button>
+      </div>
+      
+      <div class="settings-section">
+        <div class="settings-section-title">Theme</div>
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">Theme Mode</div>
+            <select id="themeSelect" class="settings-input" onchange="changeThemeMode(this.value)">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+              <option value="oled">OLED Black</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">Custom Accent Color</div>
+            <input type="color" id="accentColor" class="color-picker" value="#7aa2ff" onchange="updateAccentColor(this.value)">
+          </div>
+          <div class="theme-preview" id="themePreview"></div>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <div class="settings-section-title">Dashboard</div>
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">Enable Drag & Drop</div>
+            <div class="settings-toggle" id="dragToggle" onclick="toggleDragDrop()"></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">Reset Widget Order</div>
+            <button class="settings-button" onclick="resetWidgetOrder()">Reset</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <div class="settings-section-title">Data</div>
+        <div class="settings-group">
+          <div class="settings-row">
+            <div class="settings-label">Export Settings</div>
+            <button class="settings-button" onclick="exportSettings()">Export</button>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label">Import Settings</div>
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importSettings(this)">
+            <button class="settings-button" onclick="document.getElementById('importFile').click()">Import</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="settings-button-group">
+        <button class="settings-button primary" onclick="saveSettings()">Save Settings</button>
+        <button class="settings-button" onclick="resetAllSettings()">Reset All</button>
+      </div>
     </div>
   </div>
 
@@ -696,10 +1067,19 @@
   const IPV6_URL = 'https://api6.ipify.org?format=json';     // IPv6 check
   const KEY = 'ip_visit_history_v1';
   const THEME_KEY = 'ip_theme_preference';
+  const SETTINGS_KEY = 'ip_settings_v1';
   const MAX_HISTORY_STORE = 500;   // keep latest 500 entries
   const HIST_PAGE_SIZE    = 20;    // rows per "page"
   let   histVisible       = HIST_PAGE_SIZE;
   let   SORT = { key: 'date', dir: 'desc' };
+
+  // Customization variables
+  let dragDropEnabled = false;
+  let customAccentColor = '#7aa2ff';
+  let currentTheme = 'dark';
+  let widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+  let draggedElement = null;
+  let dragPlaceholder = null;
 
   // Kill-switch variables
   let killSwitchActive = false;
@@ -711,6 +1091,341 @@
   let speedTestActive = false;
   let speedTestAborted = false;
   let currentSpeedResults = null;
+
+  // =========================
+  // CUSTOMIZATION FUNCTIONS
+  // =========================
+
+  // Settings Management
+  function loadSettings() {
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        dragDropEnabled = settings.dragDropEnabled || false;
+        customAccentColor = settings.customAccentColor || '#7aa2ff';
+        currentTheme = settings.currentTheme || 'dark';
+        widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+        
+        // Apply loaded settings
+        updateDragDropUI();
+        updateAccentColor(customAccentColor);
+        setTheme(currentTheme);
+        reorderWidgets();
+      }
+    } catch (e) {
+      console.warn('Failed to load settings:', e);
+    }
+  }
+
+  function saveSettings() {
+    const settings = {
+      dragDropEnabled,
+      customAccentColor,
+      currentTheme,
+      widgetOrder,
+      version: '2.7.0'
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    closeSettings();
+  }
+
+  function exportSettings() {
+    const settings = {
+      dragDropEnabled,
+      customAccentColor,
+      currentTheme,
+      widgetOrder,
+      version: '2.7.0',
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ipoint-settings.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 0);
+  }
+
+  function importSettings(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const settings = JSON.parse(e.target.result);
+        
+        if (settings.version && settings.version.startsWith('2.7')) {
+          dragDropEnabled = settings.dragDropEnabled || false;
+          customAccentColor = settings.customAccentColor || '#7aa2ff';
+          currentTheme = settings.currentTheme || 'dark';
+          widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+          
+          // Apply imported settings
+          updateDragDropUI();
+          updateAccentColor(customAccentColor);
+          setTheme(currentTheme);
+          reorderWidgets();
+          
+          alert('Settings imported successfully!');
+        } else {
+          alert('Invalid settings file format.');
+        }
+      } catch (e) {
+        alert('Failed to import settings: ' + e.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // Settings Popup Functions
+  function openSettings() {
+    document.getElementById('settingsPopup').classList.add('visible');
+    loadSettingsToUI();
+  }
+
+  function closeSettings() {
+    document.getElementById('settingsPopup').classList.remove('visible');
+  }
+
+  function loadSettingsToUI() {
+    document.getElementById('themeSelect').value = currentTheme;
+    document.getElementById('accentColor').value = customAccentColor;
+    document.getElementById('dragToggle').classList.toggle('active', dragDropEnabled);
+    updateThemePreview();
+  }
+
+  function changeThemeMode(theme) {
+    currentTheme = theme;
+    setTheme(theme);
+    updateThemePreview();
+  }
+
+  function updateAccentColor(color) {
+    customAccentColor = color;
+    
+    // Update CSS custom properties
+    const root = document.documentElement;
+    root.style.setProperty('--accent', color);
+    
+    // Update theme preview
+    updateThemePreview();
+  }
+
+  function updateThemePreview() {
+    const preview = document.getElementById('themePreview');
+    if (preview) {
+      preview.style.setProperty('--accent', customAccentColor);
+    }
+  }
+
+  function toggleDragDrop() {
+    dragDropEnabled = !dragDropEnabled;
+    document.getElementById('dragToggle').classList.toggle('active', dragDropEnabled);
+    updateDragDropUI();
+  }
+
+  function updateDragDropUI() {
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      if (dragDropEnabled) {
+        grid.classList.add('draggable');
+        attachDragDropListeners();
+      } else {
+        grid.classList.remove('draggable');
+        removeDragDropListeners();
+      }
+    }
+  }
+
+  // Drag and Drop Functions
+  function attachDragDropListeners() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+
+    const widgets = grid.querySelectorAll('.kv');
+    widgets.forEach(widget => {
+      widget.draggable = true;
+      widget.addEventListener('dragstart', handleDragStart);
+      widget.addEventListener('dragend', handleDragEnd);
+      widget.addEventListener('dragover', handleDragOver);
+      widget.addEventListener('drop', handleDrop);
+    });
+  }
+
+  function removeDragDropListeners() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+
+    const widgets = grid.querySelectorAll('.kv');
+    widgets.forEach(widget => {
+      widget.draggable = false;
+      widget.removeEventListener('dragstart', handleDragStart);
+      widget.removeEventListener('dragend', handleDragEnd);
+      widget.removeEventListener('dragover', handleDragOver);
+      widget.removeEventListener('drop', handleDrop);
+    });
+  }
+
+  function handleDragStart(e) {
+    if (!dragDropEnabled) return;
+    
+    draggedElement = e.target;
+    draggedElement.classList.add('dragging');
+    
+    // Create placeholder
+    dragPlaceholder = document.createElement('div');
+    dragPlaceholder.className = 'kv drag-placeholder';
+    dragPlaceholder.style.height = draggedElement.offsetHeight + 'px';
+    
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', draggedElement.outerHTML);
+  }
+
+  function handleDragEnd(e) {
+    if (!dragDropEnabled) return;
+    
+    draggedElement.classList.remove('dragging');
+    
+    if (dragPlaceholder && dragPlaceholder.parentNode) {
+      dragPlaceholder.parentNode.removeChild(dragPlaceholder);
+    }
+    
+    draggedElement = null;
+    dragPlaceholder = null;
+  }
+
+  function handleDragOver(e) {
+    if (!dragDropEnabled) return;
+    
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const target = e.target.closest('.kv');
+    if (target && target !== draggedElement) {
+      target.classList.add('drag-over');
+    }
+  }
+
+  function handleDrop(e) {
+    if (!dragDropEnabled) return;
+    
+    e.preventDefault();
+    
+    const target = e.target.closest('.kv');
+    if (target && target !== draggedElement) {
+      target.classList.remove('drag-over');
+      
+      // Swap elements
+      const grid = target.parentNode;
+      const draggedIndex = Array.from(grid.children).indexOf(draggedElement);
+      const targetIndex = Array.from(grid.children).indexOf(target);
+      
+      if (draggedIndex < targetIndex) {
+        grid.insertBefore(draggedElement, target.nextSibling);
+      } else {
+        grid.insertBefore(draggedElement, target);
+      }
+      
+      // Update widget order
+      updateWidgetOrder();
+    }
+  }
+
+  function updateWidgetOrder() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+    
+    const widgets = Array.from(grid.children);
+    widgetOrder = widgets.map(widget => {
+      const keyElement = widget.querySelector('.k');
+      if (keyElement) {
+        const text = keyElement.textContent.toLowerCase();
+        if (text.includes('country')) return 'country';
+        if (text.includes('region') || text.includes('city')) return 'place';
+        if (text.includes('isp')) return 'isp';
+        if (text.includes('asn')) return 'asn';
+        if (text.includes('ip')) return 'ip';
+        if (text.includes('timezone')) return 'tz';
+        if (text.includes('user agent')) return 'ua';
+        if (widget.querySelector('#miniMap')) return 'map';
+      }
+      return 'unknown';
+    }).filter(Boolean);
+  }
+
+  function reorderWidgets() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+    
+    const widgets = Array.from(grid.children);
+    const orderedWidgets = [];
+    
+    // Create a map of widgets by type
+    const widgetMap = {};
+    widgets.forEach(widget => {
+      const keyElement = widget.querySelector('.k');
+      if (keyElement) {
+        const text = keyElement.textContent.toLowerCase();
+        if (text.includes('country')) widgetMap.country = widget;
+        else if (text.includes('region') || text.includes('city')) widgetMap.place = widget;
+        else if (text.includes('isp')) widgetMap.isp = widget;
+        else if (text.includes('asn')) widgetMap.asn = widget;
+        else if (text.includes('ip')) widgetMap.ip = widget;
+        else if (text.includes('timezone')) widgetMap.tz = widget;
+        else if (text.includes('user agent')) widgetMap.ua = widget;
+        else if (widget.querySelector('#miniMap')) widgetMap.map = widget;
+      }
+    });
+    
+    // Reorder based on saved order
+    widgetOrder.forEach(type => {
+      if (widgetMap[type]) {
+        orderedWidgets.push(widgetMap[type]);
+      }
+    });
+    
+    // Add any remaining widgets
+    widgets.forEach(widget => {
+      if (!orderedWidgets.includes(widget)) {
+        orderedWidgets.push(widget);
+      }
+    });
+    
+    // Update DOM
+    orderedWidgets.forEach(widget => {
+      grid.appendChild(widget);
+    });
+  }
+
+  function resetWidgetOrder() {
+    widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+    reorderWidgets();
+  }
+
+  function resetAllSettings() {
+    if (confirm('Reset all settings to default? This will clear your customizations.')) {
+      localStorage.removeItem(SETTINGS_KEY);
+      dragDropEnabled = false;
+      customAccentColor = '#7aa2ff';
+      currentTheme = 'dark';
+      widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+      
+      // Reset UI
+      updateDragDropUI();
+      updateAccentColor(customAccentColor);
+      setTheme(currentTheme);
+      reorderWidgets();
+      loadSettingsToUI();
+    }
+  }
 
   const $ = (id) => document.getElementById(id);
   const fmt = (d) => new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(d);
@@ -1251,15 +1966,21 @@
   }
 
   function setTheme(theme) {
+    currentTheme = theme;
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem(THEME_KEY, theme);
     updateThemeToggle(theme);
     
     // Update map tiles based on theme
     if (mapBg) {
-      const tileLayer = theme === 'light' 
-        ? 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png'
-        : 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      let tileLayer;
+      if (theme === 'light') {
+        tileLayer = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png';
+      } else if (theme === 'oled') {
+        tileLayer = 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      } else {
+        tileLayer = 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      }
       mapBg.eachLayer(layer => {
         if (layer._url) {
           layer.setUrl(tileLayer);
@@ -1268,9 +1989,14 @@
     }
     
     if (mini) {
-      const tileLayer = theme === 'light' 
-        ? 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png'
-        : 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      let tileLayer;
+      if (theme === 'light') {
+        tileLayer = 'https://cartodb-basemaps-a.global.ssl.fastly.net/light_nolabels/{z}/{x}/{y}{r}.png';
+      } else if (theme === 'oled') {
+        tileLayer = 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      } else {
+        tileLayer = 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}{r}.png';
+      }
       mini.eachLayer(layer => {
         if (layer._url) {
           layer.setUrl(tileLayer);
@@ -1285,6 +2011,9 @@
     if (theme === 'light') {
       icon.textContent = '🌙';
       text.textContent = 'Dark';
+    } else if (theme === 'oled') {
+      icon.textContent = '☀️';
+      text.textContent = 'Light';
     } else {
       icon.textContent = '☀️';
       text.textContent = 'Light';
@@ -1292,8 +2021,15 @@
   }
 
   function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    const currentThemeAttr = document.documentElement.getAttribute('data-theme');
+    let newTheme;
+    if (currentThemeAttr === 'light') {
+      newTheme = 'dark';
+    } else if (currentThemeAttr === 'dark') {
+      newTheme = 'oled';
+    } else {
+      newTheme = 'light';
+    }
     setTheme(newTheme);
   }
 
@@ -2032,6 +2768,9 @@
     // Initialize theme first
     initTheme();
     
+    // Load customization settings
+    loadSettings();
+    
     const dev = deviceInfo();
     setKV('ua', dev.ua);
 
@@ -2215,6 +2954,16 @@
   window.toggleSpeedTest = toggleSpeedTest;
   window.startSpeedTest = startSpeedTest;
   window.stopSpeedTest = stopSpeedTest;
+  window.openSettings = openSettings;
+  window.closeSettings = closeSettings;
+  window.changeThemeMode = changeThemeMode;
+  window.updateAccentColor = updateAccentColor;
+  window.toggleDragDrop = toggleDragDrop;
+  window.resetWidgetOrder = resetWidgetOrder;
+  window.exportSettings = exportSettings;
+  window.importSettings = importSettings;
+  window.saveSettings = saveSettings;
+  window.resetAllSettings = resetAllSettings;
 
   init();
 </script>
