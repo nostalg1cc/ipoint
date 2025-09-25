@@ -3149,6 +3149,70 @@
     }
   }
 
+  async function init(){
+    console.log('IPoint: Starting initialization...');
+    
+    // Initialize theme first
+    initTheme();
+    
+    // Update footer version
+    updateFooterVersion();
+    
+    const dev = deviceInfo();
+    setKV('ua', dev.ua);
+
+    // Try both providers with normalization
+    try{
+      console.log('IPoint: Fetching IP data...');
+      const data = await getIpData();
+      console.log('IPoint: IP data received:', data);
+
+      // change badges vs last
+      const hist = getHistory();
+      const last = hist[hist.length - 1];
+      diffBadges(last, data);
+
+      fillUI(data);
+
+      // Save visit (normal entry, not security alert)
+      appendHistory({
+        timestamp: Date.now(),
+        ip: data.ip,
+        country: data.country,
+        region: data.region,
+        city: data.city,
+        isp: data.connection?.isp || data.connection?.org,
+        asn: data.connection?.asn,
+        timezone: data.timezone
+      });
+
+      // Render history
+      renderHistory();
+      
+      // Start kill-switch monitoring
+      startKillSwitch(data.ip);
+      
+      // Load customization settings after everything is set up
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
+      
+    }catch(err){
+      console.error('IPoint: Error during initialization:', err);
+      // Never reference an undefined `data` here.
+      $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
+      $('greetSub').textContent = buildGreetSub({ timezone: 'UTC' });
+      $('flag').innerHTML = '';
+      // keep existing history visible
+      renderHistory();
+      
+      // Load customization settings even if data loading failed
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
+    }
+  }
+
   function fillUI(data){
     $('greeting').textContent = safeBuildGreeting(data);
     $('greetSub').textContent = buildGreetSub(data);
