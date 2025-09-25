@@ -81,6 +81,61 @@
       border: 2px dashed var(--muted);
     }
     
+    /* iOS-style wiggle animation */
+    .kv.wiggle {
+      animation: wiggle 0.3s ease-in-out infinite alternate;
+      cursor: grabbing;
+    }
+    
+    @keyframes wiggle {
+      0% { transform: rotate(-1deg); }
+      100% { transform: rotate(1deg); }
+    }
+    
+    /* Remove button */
+    .kv .remove-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 20px;
+      height: 20px;
+      background: var(--bad);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 12px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: all 0.2s ease;
+    }
+    
+    .kv.wiggle .remove-btn {
+      display: flex;
+    }
+    
+    .kv .remove-btn:hover {
+      background: #dc2626;
+      transform: scale(1.1);
+    }
+    
+    /* Edit mode styles */
+    .grid.edit-mode .kv {
+      cursor: grab;
+    }
+    
+    .grid.edit-mode .kv:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .grid.edit-mode .kv.wiggle {
+      transform: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+    
     /* Settings Popup Styles */
     .settings-popup {
       position: fixed;
@@ -1043,6 +1098,10 @@
             <div class="settings-label">Reset Widget Order</div>
             <button class="settings-button" onclick="resetWidgetOrder()">Reset</button>
           </div>
+          <div class="settings-row">
+            <div class="settings-label">Re-add Removed Widgets</div>
+            <button class="settings-button" onclick="showReAddWidgets()">Manage</button>
+          </div>
         </div>
       </div>
       
@@ -1085,8 +1144,12 @@
   let customAccentColor = '#7aa2ff';
   let currentTheme = 'dark';
   let widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+  let removedWidgets = [];
   let draggedElement = null;
   let dragPlaceholder = null;
+  let editMode = false;
+  let holdTimer = null;
+  let wiggleTimeout = null;
 
   // Kill-switch variables
   let killSwitchActive = false;
@@ -1116,6 +1179,7 @@
         customAccentColor = settings.customAccentColor || '#7aa2ff';
         currentTheme = settings.currentTheme || 'dark';
         widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+        removedWidgets = settings.removedWidgets || [];
         
         console.log('IPoint: Applying settings - dragDropEnabled:', dragDropEnabled, 'customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
         
@@ -1161,6 +1225,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
+      removedWidgets,
       version: '2.7.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -1173,6 +1238,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
+      removedWidgets,
       version: '2.7.0',
       exportDate: new Date().toISOString()
     };
@@ -1204,6 +1270,7 @@
           customAccentColor = settings.customAccentColor || '#7aa2ff';
           currentTheme = settings.currentTheme || 'dark';
           widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+          removedWidgets = settings.removedWidgets || [];
           
           // Apply imported settings
           updateDragDropUI();
@@ -1318,20 +1385,33 @@
     if (dragDropEnabled) {
       grid.classList.add('draggable');
       attachDragDropListeners();
+      addRemoveButtons();
     } else {
       grid.classList.remove('draggable');
       removeDragDropListeners();
+      removeRemoveButtons();
+      exitEditMode();
     }
   }
 
-  // Drag and Drop Functions
+  // iOS-style Drag and Drop Functions
   function attachDragDropListeners() {
     const grid = document.querySelector('.grid');
     if (!grid) return;
 
     const widgets = grid.querySelectorAll('.kv');
     widgets.forEach(widget => {
-      widget.draggable = true;
+      // Remove existing listeners
+      widget.removeEventListener('mousedown', handleMouseDown);
+      widget.removeEventListener('touchstart', handleTouchStart);
+      widget.removeEventListener('dragstart', handleDragStart);
+      widget.removeEventListener('dragend', handleDragEnd);
+      widget.removeEventListener('dragover', handleDragOver);
+      widget.removeEventListener('drop', handleDrop);
+      
+      // Add new iOS-style listeners
+      widget.addEventListener('mousedown', handleMouseDown);
+      widget.addEventListener('touchstart', handleTouchStart);
       widget.addEventListener('dragstart', handleDragStart);
       widget.addEventListener('dragend', handleDragEnd);
       widget.addEventListener('dragover', handleDragOver);
@@ -1345,7 +1425,8 @@
 
     const widgets = grid.querySelectorAll('.kv');
     widgets.forEach(widget => {
-      widget.draggable = false;
+      widget.removeEventListener('mousedown', handleMouseDown);
+      widget.removeEventListener('touchstart', handleTouchStart);
       widget.removeEventListener('dragstart', handleDragStart);
       widget.removeEventListener('dragend', handleDragEnd);
       widget.removeEventListener('dragover', handleDragOver);
@@ -1353,10 +1434,40 @@
     });
   }
 
-  function handleDragStart(e) {
-    if (!dragDropEnabled) return;
+  // iOS-style event handlers
+  function handleMouseDown(e) {
+    if (!dragDropEnabled || editMode) return;
     
-    draggedElement = e.target;
+    const widget = e.target.closest('.kv');
+    if (!widget) return;
+    
+    holdTimer = setTimeout(() => {
+      enterEditMode();
+      startWiggle(widget);
+    }, 500); // 500ms hold to enter edit mode
+  }
+
+  function handleTouchStart(e) {
+    if (!dragDropEnabled || editMode) return;
+    
+    const widget = e.target.closest('.kv');
+    if (!widget) return;
+    
+    holdTimer = setTimeout(() => {
+      enterEditMode();
+      startWiggle(widget);
+    }, 500);
+  }
+
+  function handleDragStart(e) {
+    if (!dragDropEnabled || !editMode) {
+      e.preventDefault();
+      return;
+    }
+    
+    draggedElement = e.target.closest('.kv');
+    if (!draggedElement) return;
+    
     draggedElement.classList.add('dragging');
     
     // Create placeholder
@@ -1371,7 +1482,9 @@
   function handleDragEnd(e) {
     if (!dragDropEnabled) return;
     
-    draggedElement.classList.remove('dragging');
+    if (draggedElement) {
+      draggedElement.classList.remove('dragging');
+    }
     
     if (dragPlaceholder && dragPlaceholder.parentNode) {
       dragPlaceholder.parentNode.removeChild(dragPlaceholder);
@@ -1413,8 +1526,9 @@
         grid.insertBefore(draggedElement, target);
       }
       
-      // Update widget order
+      // Update widget order and save immediately
       updateWidgetOrder();
+      console.log('IPoint: Widget order updated and saved');
     }
   }
 
@@ -1445,6 +1559,7 @@
       customAccentColor,
       currentTheme,
       widgetOrder,
+      removedWidgets,
       version: '2.7.0'
     };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -1463,30 +1578,32 @@
     // Create a map of widgets by type
     const widgetMap = {};
     widgets.forEach(widget => {
-      const keyElement = widget.querySelector('.k');
-      if (keyElement) {
-        const text = keyElement.textContent.toLowerCase();
-        if (text.includes('country')) widgetMap.country = widget;
-        else if (text.includes('region') || text.includes('city')) widgetMap.place = widget;
-        else if (text.includes('isp')) widgetMap.isp = widget;
-        else if (text.includes('asn')) widgetMap.asn = widget;
-        else if (text.includes('ip')) widgetMap.ip = widget;
-        else if (text.includes('timezone')) widgetMap.tz = widget;
-        else if (text.includes('user agent')) widgetMap.ua = widget;
-        else if (widget.querySelector('#miniMap')) widgetMap.map = widget;
+      const widgetType = getWidgetType(widget);
+      if (widgetType) {
+        widgetMap[widgetType] = widget;
       }
     });
     
-    // Reorder based on saved order
+    // Reorder based on saved order, excluding removed widgets
     widgetOrder.forEach(type => {
-      if (widgetMap[type]) {
+      if (widgetMap[type] && !removedWidgets.includes(type)) {
         orderedWidgets.push(widgetMap[type]);
+        // Show widget if it was hidden
+        widgetMap[type].style.display = '';
       }
     });
     
-    // Add any remaining widgets
+    // Hide removed widgets
+    removedWidgets.forEach(type => {
+      if (widgetMap[type]) {
+        widgetMap[type].style.display = 'none';
+      }
+    });
+    
+    // Add any remaining widgets that aren't in the order
     widgets.forEach(widget => {
-      if (!orderedWidgets.includes(widget)) {
+      const widgetType = getWidgetType(widget);
+      if (widgetType && !widgetOrder.includes(widgetType) && !removedWidgets.includes(widgetType)) {
         orderedWidgets.push(widget);
       }
     });
@@ -1495,6 +1612,9 @@
     orderedWidgets.forEach(widget => {
       grid.appendChild(widget);
     });
+    
+    // Redistribute space
+    redistributeSpace();
   }
 
   function resetWidgetOrder() {
@@ -1509,6 +1629,7 @@
       customAccentColor = '#7aa2ff';
       currentTheme = 'dark';
       widgetOrder = ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
+      removedWidgets = [];
       
       // Reset UI
       updateDragDropUI();
@@ -1516,6 +1637,247 @@
       setTheme(currentTheme);
       reorderWidgets();
       loadSettingsToUI();
+    }
+  }
+
+  // iOS-style Edit Mode Functions
+  function enterEditMode() {
+    if (editMode) return;
+    
+    editMode = true;
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      grid.classList.add('edit-mode');
+    }
+    
+    // Add click outside to exit edit mode
+    document.addEventListener('click', handleClickOutside);
+  }
+
+  function exitEditMode() {
+    if (!editMode) return;
+    
+    editMode = false;
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      grid.classList.remove('edit-mode');
+    }
+    
+    // Stop all wiggling
+    const widgets = document.querySelectorAll('.kv.wiggle');
+    widgets.forEach(widget => {
+      widget.classList.remove('wiggle');
+    });
+    
+    // Remove click outside listener
+    document.removeEventListener('click', handleClickOutside);
+  }
+
+  function handleClickOutside(e) {
+    if (!editMode) return;
+    
+    const grid = document.querySelector('.grid');
+    if (grid && !grid.contains(e.target)) {
+      exitEditMode();
+    }
+  }
+
+  function startWiggle(widget) {
+    if (!widget) return;
+    
+    widget.classList.add('wiggle');
+    
+    // Auto-exit wiggle after 3 seconds
+    wiggleTimeout = setTimeout(() => {
+      widget.classList.remove('wiggle');
+    }, 3000);
+  }
+
+  function stopWiggle(widget) {
+    if (!widget) return;
+    
+    widget.classList.remove('wiggle');
+    if (wiggleTimeout) {
+      clearTimeout(wiggleTimeout);
+      wiggleTimeout = null;
+    }
+  }
+
+  // Widget Management Functions
+  function addRemoveButtons() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+
+    const widgets = grid.querySelectorAll('.kv');
+    widgets.forEach(widget => {
+      // Remove existing remove button
+      const existingBtn = widget.querySelector('.remove-btn');
+      if (existingBtn) {
+        existingBtn.remove();
+      }
+      
+      // Add remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-btn';
+      removeBtn.innerHTML = '×';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeWidget(widget);
+      };
+      widget.appendChild(removeBtn);
+    });
+  }
+
+  function removeRemoveButtons() {
+    const removeBtns = document.querySelectorAll('.remove-btn');
+    removeBtns.forEach(btn => btn.remove());
+  }
+
+  function removeWidget(widget) {
+    const widgetType = getWidgetType(widget);
+    if (!widgetType) return;
+    
+    // Add to removed widgets
+    if (!removedWidgets.includes(widgetType)) {
+      removedWidgets.push(widgetType);
+    }
+    
+    // Remove from widget order
+    const index = widgetOrder.indexOf(widgetType);
+    if (index > -1) {
+      widgetOrder.splice(index, 1);
+    }
+    
+    // Hide widget
+    widget.style.display = 'none';
+    
+    // Save settings
+    saveWidgetSettings();
+    
+    // Redistribute space
+    redistributeSpace();
+    
+    console.log('IPoint: Widget removed:', widgetType);
+  }
+
+  function getWidgetType(widget) {
+    const keyElement = widget.querySelector('.k');
+    if (keyElement) {
+      const text = keyElement.textContent.toLowerCase();
+      if (text.includes('country')) return 'country';
+      if (text.includes('region') || text.includes('city')) return 'place';
+      if (text.includes('isp')) return 'isp';
+      if (text.includes('asn')) return 'asn';
+      if (text.includes('ip')) return 'ip';
+      if (text.includes('timezone')) return 'tz';
+      if (text.includes('user agent')) return 'ua';
+      if (widget.querySelector('#miniMap')) return 'map';
+    }
+    return null;
+  }
+
+  function redistributeSpace() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+    
+    // Calculate how many widgets are visible
+    const visibleWidgets = Array.from(grid.children).filter(widget => 
+      widget.style.display !== 'none'
+    );
+    
+    // Adjust grid columns based on visible widgets
+    const visibleCount = visibleWidgets.length;
+    let columns = 4;
+    
+    if (visibleCount <= 2) {
+      columns = 2;
+    } else if (visibleCount <= 3) {
+      columns = 3;
+    } else if (visibleCount <= 6) {
+      columns = 3;
+    } else {
+      columns = 4;
+    }
+    
+    grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+  }
+
+  function reAddWidget(widgetType) {
+    if (!removedWidgets.includes(widgetType)) return;
+    
+    // Remove from removed widgets
+    const index = removedWidgets.indexOf(widgetType);
+    if (index > -1) {
+      removedWidgets.splice(index, 1);
+    }
+    
+    // Add back to widget order
+    if (!widgetOrder.includes(widgetType)) {
+      widgetOrder.push(widgetType);
+    }
+    
+    // Show widget
+    const grid = document.querySelector('.grid');
+    if (grid) {
+      const widgets = grid.querySelectorAll('.kv');
+      widgets.forEach(widget => {
+        if (getWidgetType(widget) === widgetType) {
+          widget.style.display = '';
+        }
+      });
+    }
+    
+    // Save settings
+    saveWidgetSettings();
+    
+    // Redistribute space
+    redistributeSpace();
+    
+    console.log('IPoint: Widget re-added:', widgetType);
+  }
+
+  function saveWidgetSettings() {
+    const settings = {
+      dragDropEnabled,
+      customAccentColor,
+      currentTheme,
+      widgetOrder,
+      removedWidgets,
+      version: '2.7.0'
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }
+
+  function showReAddWidgets() {
+    if (removedWidgets.length === 0) {
+      alert('No widgets have been removed.');
+      return;
+    }
+    
+    const widgetNames = {
+      'country': 'Country',
+      'place': 'Region / City',
+      'isp': 'ISP',
+      'asn': 'ASN',
+      'ip': 'IP Address',
+      'tz': 'Timezone',
+      'ua': 'User Agent',
+      'map': 'Map'
+    };
+    
+    const widgetList = removedWidgets.map(type => 
+      `• ${widgetNames[type] || type}`
+    ).join('\n');
+    
+    const choice = confirm(`Removed widgets:\n\n${widgetList}\n\nClick OK to re-add all removed widgets, or Cancel to keep them hidden.`);
+    
+    if (choice) {
+      // Re-add all removed widgets
+      const widgetsToReAdd = [...removedWidgets];
+      widgetsToReAdd.forEach(type => {
+        reAddWidget(type);
+      });
+      alert('All widgets have been re-added!');
     }
   }
 
@@ -3064,6 +3426,10 @@
   window.importSettings = importSettings;
   window.saveSettings = saveSettings;
   window.resetAllSettings = resetAllSettings;
+  window.showReAddWidgets = showReAddWidgets;
+  window.reAddWidget = reAddWidget;
+  window.enterEditMode = enterEditMode;
+  window.exitEditMode = exitEditMode;
 
   init();
 </script>
