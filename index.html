@@ -1424,6 +1424,12 @@
     if (dragDropEnabled) {
       grid.classList.add('draggable');
       attachDragDropListeners();
+      
+      // Make sure all widgets are non-draggable by default
+      const widgets = grid.querySelectorAll('.kv');
+      widgets.forEach(widget => {
+        widget.draggable = false;
+      });
     } else {
       grid.classList.remove('draggable');
       removeDragDropListeners();
@@ -1728,10 +1734,17 @@
       grid.classList.remove('edit-mode');
     }
     
-    // Stop ALL widgets from wiggling (like iOS)
+    // Stop ALL widgets from wiggling and make them non-draggable (like iOS)
     const widgets = document.querySelectorAll('.kv.wiggle');
     widgets.forEach(widget => {
       widget.classList.remove('wiggle');
+      widget.draggable = false; // Make them non-draggable!
+    });
+    
+    // Also make sure ALL widgets are non-draggable
+    const allWidgets = document.querySelectorAll('.kv');
+    allWidgets.forEach(widget => {
+      widget.draggable = false;
     });
     
     // Remove ALL delete buttons
@@ -1767,6 +1780,7 @@
       const allWidgets = grid.querySelectorAll('.kv');
       allWidgets.forEach(w => {
         w.classList.add('wiggle');
+        w.draggable = true; // Make them draggable!
       });
       
       // Add delete buttons to all widgets
@@ -1783,7 +1797,7 @@
       exitEditMode();
     }, 10000);
     
-    console.log('IPoint: All widgets now wiggling (iOS style)');
+    console.log('IPoint: All widgets now wiggling and draggable (iOS style)');
   }
 
   function stopWiggle(widget) {
