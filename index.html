@@ -993,7 +993,7 @@
 
   <!-- Version Footer -->
   <div class="version-footer">
-    <div>IPoint v2.7.1 - Customizable Dashboard & Themes</div>
+    <div>IPoint v2.7.0 - Customizable Dashboard & Themes</div>
     <div class="version-memo">
       <!-- AI Memo: Added drag-and-drop widgets, custom themes, and settings popup -->
       <!-- Last updated: Advanced UI/UX with customization options -->
@@ -1106,19 +1106,49 @@
   // Settings Management
   function loadSettings() {
     try {
+      console.log('IPoint: Loading settings...');
       const saved = localStorage.getItem(SETTINGS_KEY);
       if (saved) {
         const settings = JSON.parse(saved);
+        console.log('IPoint: Loaded settings:', settings);
+        
         dragDropEnabled = settings.dragDropEnabled || false;
         customAccentColor = settings.customAccentColor || '#7aa2ff';
         currentTheme = settings.currentTheme || 'dark';
         widgetOrder = settings.widgetOrder || ['country', 'place', 'isp', 'asn', 'ip', 'tz', 'ua', 'map'];
         
-        // Apply loaded settings
-        updateDragDropUI();
-        updateAccentColor(customAccentColor);
-        setTheme(currentTheme);
-        reorderWidgets();
+        console.log('IPoint: Applying settings - dragDropEnabled:', dragDropEnabled, 'customAccentColor:', customAccentColor, 'currentTheme:', currentTheme);
+        
+        // Apply loaded settings - with safety checks
+        try {
+          updateDragDropUI();
+          console.log('IPoint: Drag drop UI updated');
+        } catch (e) {
+          console.warn('Failed to update drag drop UI:', e);
+        }
+        
+        try {
+          updateAccentColor(customAccentColor);
+          console.log('IPoint: Accent color updated');
+        } catch (e) {
+          console.warn('Failed to update accent color:', e);
+        }
+        
+        try {
+          setTheme(currentTheme);
+          console.log('IPoint: Theme updated');
+        } catch (e) {
+          console.warn('Failed to set theme:', e);
+        }
+        
+        try {
+          reorderWidgets();
+          console.log('IPoint: Widgets reordered');
+        } catch (e) {
+          console.warn('Failed to reorder widgets:', e);
+        }
+      } else {
+        console.log('IPoint: No saved settings found');
       }
     } catch (e) {
       console.warn('Failed to load settings:', e);
@@ -1280,14 +1310,17 @@
 
   function updateDragDropUI() {
     const grid = document.querySelector('.grid');
-    if (grid) {
-      if (dragDropEnabled) {
-        grid.classList.add('draggable');
-        attachDragDropListeners();
-      } else {
-        grid.classList.remove('draggable');
-        removeDragDropListeners();
-      }
+    if (!grid) {
+      console.warn('Grid not found, skipping drag drop UI update');
+      return;
+    }
+    
+    if (dragDropEnabled) {
+      grid.classList.add('draggable');
+      attachDragDropListeners();
+    } else {
+      grid.classList.remove('draggable');
+      removeDragDropListeners();
     }
   }
 
@@ -1419,7 +1452,10 @@
 
   function reorderWidgets() {
     const grid = document.querySelector('.grid');
-    if (!grid) return;
+    if (!grid) {
+      console.warn('Grid not found, skipping widget reorder');
+      return;
+    }
     
     const widgets = Array.from(grid.children);
     const orderedWidgets = [];
@@ -2064,15 +2100,17 @@
   function updateThemeToggle(theme) {
     const icon = $('themeIcon');
     const text = $('themeText');
-    if (theme === 'light') {
-      icon.textContent = '🌙';
-      text.textContent = 'Dark';
-    } else if (theme === 'oled') {
-      icon.textContent = '☀️';
-      text.textContent = 'Light';
-    } else {
-      icon.textContent = '☀️';
-      text.textContent = 'Light';
+    if (icon && text) {
+      if (theme === 'light') {
+        icon.textContent = '🌙';
+        text.textContent = 'Dark';
+      } else if (theme === 'oled') {
+        icon.textContent = '☀️';
+        text.textContent = 'Light';
+      } else {
+        icon.textContent = '☀️';
+        text.textContent = 'Light';
+      }
     }
   }
 
@@ -2815,18 +2853,19 @@
   }
 
   async function init(){
+    console.log('IPoint: Starting initialization...');
+    
     // Initialize theme first
     initTheme();
-    
-    // Load customization settings
-    loadSettings();
     
     const dev = deviceInfo();
     setKV('ua', dev.ua);
 
     // Try both providers with normalization
     try{
+      console.log('IPoint: Fetching IP data...');
       const data = await getIpData();
+      console.log('IPoint: IP data received:', data);
 
       // change badges vs last
       const hist = getHistory();
@@ -2858,13 +2897,24 @@
       // Start kill-switch monitoring
       startKillSwitch(data.ip);
       
+      // Load customization settings after everything is set up
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
+      
     }catch(err){
+      console.error('IPoint: Error during initialization:', err);
       // Never reference an undefined `data` here.
       $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
       $('greetSub').textContent = buildGreetSub({ timezone: 'UTC' });
       $('flag').innerHTML = '';
       // keep existing history visible
       renderHistory();
+      
+      // Load customization settings even if data loading failed
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
     }
   }
 
