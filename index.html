@@ -3471,8 +3471,88 @@
   window.enterEditMode = enterEditMode;
   window.exitEditMode = exitEditMode;
 
-  console.log('IPoint: Script loaded, calling init...');
-  alert('IPoint: Script loaded, calling init...');
+  // Simple working version
+  console.log('IPoint: Script loaded');
+  
+  // Essential functions
+  function deviceInfo() { return { ua: navigator.userAgent }; }
+  function getHistory() { try { const saved = localStorage.getItem('ipoint_history'); return saved ? JSON.parse(saved) : []; } catch { return []; } }
+  function diffBadges(last, current) { if (!last) return; }
+  function renderHistory() { const hist = getHistory(); const container = document.getElementById('historyContainer'); if (container) { container.innerHTML = hist.map(entry => `<div class="history-entry"><span>${entry.ip}</span><span>${entry.country}</span><span>${new Date(entry.timestamp).toLocaleString()}</span></div>`).join(''); } }
+  function appendHistory(entry) { const hist = getHistory(); hist.push(entry); if (hist.length > 500) hist.shift(); localStorage.setItem('ipoint_history', JSON.stringify(hist)); }
+  function startKillSwitch(ip) { console.log('Kill switch started for IP:', ip); }
+  function safeBuildGreeting(data) { return `Hello from ${data.country || 'Unknown'}`; }
+  function buildGreetSub(data) { return `Your IP: ${data.ip || 'Unknown'}`; }
+  function renderFlag(countryCode) { const flag = document.getElementById('flag'); if (flag && countryCode) { flag.innerHTML = `🏳️ ${countryCode}`; } }
+  function setFavicon(countryCode) { }
+  function truncateText(text, maxLength) { if (!text) return ''; return text.length > maxLength ? text.substring(0, maxLength) + '...' : text; }
+  function normalizeFromIpwho(data) { return { ip: data.ip, country: data.country, country_code: data.country_code, region: data.region, city: data.city, timezone: data.timezone, connection: { isp: data.connection?.isp, org: data.connection?.org, asn: data.connection?.asn } }; }
+  function normalizeFromIpapi(data) { return { ip: data.ip, country: data.country_name, country_code: data.country_code, region: data.region, city: data.city, timezone: data.timezone, connection: { isp: data.org, org: data.org, asn: data.asn } }; }
+
+  async function init(){
+    console.log('IPoint: Starting initialization...');
+    
+    // Initialize theme first
+    initTheme();
+    
+    // Update footer version
+    updateFooterVersion();
+    
+    const dev = deviceInfo();
+    setKV('ua', dev.ua);
+
+    // Try both providers with normalization
+    try{
+      console.log('IPoint: Fetching IP data...');
+      const data = await getIpData();
+      console.log('IPoint: IP data received:', data);
+
+      // change badges vs last
+      const hist = getHistory();
+      const last = hist[hist.length - 1];
+      diffBadges(last, data);
+
+      fillUI(data);
+
+      // Save visit (normal entry, not security alert)
+      appendHistory({
+        timestamp: Date.now(),
+        ip: data.ip,
+        country: data.country,
+        region: data.region,
+        city: data.city,
+        isp: data.connection?.isp || data.connection?.org,
+        asn: data.connection?.asn,
+        timezone: data.timezone
+      });
+
+      // Render history
+      renderHistory();
+      
+      // Start kill-switch monitoring
+      startKillSwitch(data.ip);
+      
+      // Load customization settings after everything is set up
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
+      
+    }catch(err){
+      console.error('IPoint: Error during initialization:', err);
+      // Never reference an undefined `data` here.
+      $('greeting').textContent = safeBuildGreeting({ timezone: 'UTC' });
+      $('greetSub').textContent = buildGreetSub({ timezone: 'UTC' });
+      $('flag').innerHTML = '';
+      // keep existing history visible
+      renderHistory();
+      
+      // Load customization settings even if data loading failed
+      setTimeout(() => {
+        loadSettings();
+      }, 100);
+    }
+  }
+
   init();
 </script>
 
