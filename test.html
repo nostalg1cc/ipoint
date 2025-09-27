@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dark Map</title>
     
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Dark Map">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -34,7 +43,7 @@
             right: 10px;
             height: 70%;
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
+            border-radius: 40px;
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
             transition: height 0.3s ease;
             z-index: 1000;
@@ -66,6 +75,43 @@
             height: 100%;
             overflow-y: auto;
         }
+        
+        .refresh-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 20px;
+            background: #007bff;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .refresh-button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+        
+        .refresh-button:active {
+            transform: scale(0.95);
+        }
+        
+        .refresh-button.loading {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -73,10 +119,12 @@
     
     <div class="bottom-container" id="bottomContainer">
         <div class="drag-handle" id="dragHandle"></div>
+        <button class="refresh-button" id="refreshButton" title="Refresh Location & UI">↻</button>
         <div class="container-content">
             <h2>Bottom Container</h2>
             <p>This container can be dragged up and down using the pill-shaped handle above.</p>
             <p>Click and drag the handle to toggle between 70% and 30% height.</p>
+            <p>Use the refresh button to update your location and check for UI updates.</p>
         </div>
     </div>
 
@@ -94,6 +142,10 @@
         
         let currentLocation = [40.7128, -74.0060];
         let locationMarker = null;
+        
+        // PWA Cache Version - Update this to force cache refresh
+        const CACHE_VERSION = '1.0.0';
+        const CACHE_NAME = `dark-map-cache-v${CACHE_VERSION}`;
         
         // Add dark map tiles with no labels (CartoDB Dark No Labels)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
@@ -144,6 +196,47 @@
             }
             locationMarker = L.marker(currentLocation).addTo(map);
         }
+        
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        // Refresh button functionality
+        document.getElementById('refreshButton').addEventListener('click', async () => {
+            const refreshButton = document.getElementById('refreshButton');
+            refreshButton.classList.add('loading');
+            
+            try {
+                // Refresh location
+                await fetchLocation();
+                
+                // Check for UI updates
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        await registration.update();
+                        // Force reload if there's an update
+                        if (registration.waiting) {
+                            registration.waiting.postMessage({ action: 'skipWaiting' });
+                            window.location.reload();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Refresh failed:', error);
+            } finally {
+                refreshButton.classList.remove('loading');
+            }
+        });
         
         // Fetch location when page loads
         document.addEventListener('DOMContentLoaded', fetchLocation);
