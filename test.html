@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .bottom-container {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 70%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+            transition: height 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .bottom-container.collapsed {
+            height: 30%;
+        }
+        
+        .drag-handle {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 6px;
+            background: #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .drag-handle:hover {
+            background: #999;
+        }
+        
+        .container-content {
+            padding: 30px 20px 20px 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="bottom-container" id="bottomContainer">
+        <div class="drag-handle" id="dragHandle"></div>
+        <div class="container-content">
+            <h2>Bottom Container</h2>
+            <p>This container can be dragged up and down using the pill-shaped handle above.</p>
+            <p>Click and drag the handle to toggle between 70% and 30% height.</p>
+        </div>
+    </div>
+
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    
+    <script>
+        // Initialize map with default location and disable zoom controls
+        let map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false
+        }).setView([40.7128, -74.0060], 14);
+        
+        let currentLocation = [40.7128, -74.0060];
+        let locationMarker = null;
+        
+        // Add dark map tiles with no labels (CartoDB Dark No Labels)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+            attribution: '',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Function to fetch IP location and center map
+        async function fetchLocation() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                
+                if (!data.error) {
+                    const lat = data.latitude;
+                    const lon = data.longitude;
+                    currentLocation = [lat, lon];
+                    centerMapOnLocation();
+                }
+            } catch (error) {
+                console.error('Error fetching location:', error);
+            }
+        }
+        
+        // Function to center map on location based on container state
+        function centerMapOnLocation() {
+            const container = document.getElementById('bottomContainer');
+            const isCollapsed = container.classList.contains('collapsed');
+            const zoomLevel = isCollapsed ? 16 : 14;
+            
+            // Calculate the center point based on visible map area
+            const containerHeight = container.offsetHeight;
+            const windowHeight = window.innerHeight;
+            const visibleMapHeight = windowHeight - containerHeight;
+            
+            // Calculate offset to center the location in the visible area
+            const mapCenterOffset = (containerHeight / 2) / windowHeight;
+            const latOffset = mapCenterOffset * 0.1; // Adjust this value to fine-tune positioning
+            
+            const adjustedLat = currentLocation[0] + latOffset;
+            
+            map.setView([adjustedLat, currentLocation[1]], zoomLevel);
+            
+            // Add or update location marker
+            if (locationMarker) {
+                map.removeLayer(locationMarker);
+            }
+            locationMarker = L.marker(currentLocation).addTo(map);
+        }
+        
+        // Fetch location when page loads
+        document.addEventListener('DOMContentLoaded', fetchLocation);
+        
+        // Drag handle functionality
+        let isDragging = false;
+        let startY = 0;
+        let startHeight = 0;
+        
+        const dragHandle = document.getElementById('dragHandle');
+        const bottomContainer = document.getElementById('bottomContainer');
+        
+        dragHandle.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startY = e.clientY;
+            startHeight = bottomContainer.offsetHeight;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaY = startY - e.clientY;
+            const newHeight = startHeight + deltaY;
+            const windowHeight = window.innerHeight;
+            
+            // Constrain height between 30% and 70% of screen height
+            const minHeight = windowHeight * 0.3;
+            const maxHeight = windowHeight * 0.7;
+            
+            if (newHeight >= minHeight && newHeight <= maxHeight) {
+                bottomContainer.style.height = newHeight + 'px';
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            const currentHeight = bottomContainer.offsetHeight;
+            const windowHeight = window.innerHeight;
+            
+            // Snap to closest state (30% or 70%)
+            const midPoint = windowHeight * 0.5;
+            if (currentHeight > midPoint) {
+                bottomContainer.classList.remove('collapsed');
+            } else {
+                bottomContainer.classList.add('collapsed');
+            }
+            
+            // Re-center map on location after container state changes
+            centerMapOnLocation();
+        });
+        
+        // Touch support for mobile
+        dragHandle.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            startY = e.touches[0].clientY;
+            startHeight = bottomContainer.offsetHeight;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaY = startY - e.touches[0].clientY;
+            const newHeight = startHeight + deltaY;
+            const windowHeight = window.innerHeight;
+            
+            const minHeight = windowHeight * 0.3;
+            const maxHeight = windowHeight * 0.7;
+            
+            if (newHeight >= minHeight && newHeight <= maxHeight) {
+                bottomContainer.style.height = newHeight + 'px';
+            }
+            
+            e.preventDefault();
+        });
+        
+        document.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            const currentHeight = bottomContainer.offsetHeight;
+            const windowHeight = window.innerHeight;
+            
+            const midPoint = windowHeight * 0.5;
+            if (currentHeight > midPoint) {
+                bottomContainer.classList.remove('collapsed');
+            } else {
+                bottomContainer.classList.add('collapsed');
+            }
+            
+            // Re-center map on location after container state changes
+            centerMapOnLocation();
+        });
+    </script>
+</body>
+</html>
