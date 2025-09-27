@@ -2,7 +2,7 @@
   "name": "Dark Map",
   "short_name": "DarkMap",
   "description": "A dark map with location tracking and draggable container",
-  "start_url": "/test.html",
+  "start_url": "/ipoint/test.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
@@ -20,4 +20,5 @@
     }
   ]
 }
+
 
