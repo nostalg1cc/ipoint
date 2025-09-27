@@ -29,6 +29,7 @@
         body, html {
             height: 100%;
             overflow: hidden;
+            background-color: #000000;
         }
         
         #map {
@@ -64,6 +65,13 @@
             border-radius: 3px;
             cursor: pointer;
             transition: background 0.2s ease;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         .drag-handle:hover {
@@ -291,16 +299,20 @@
             centerMapOnLocation();
         });
         
-        // Touch support for mobile
+        // Touch support for mobile - improved for iOS
         dragHandle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             isDragging = true;
             startY = e.touches[0].clientY;
             startHeight = bottomContainer.offsetHeight;
-            e.preventDefault();
-        });
+        }, { passive: false });
         
         document.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
             
             const deltaY = startY - e.touches[0].clientY;
             const newHeight = startHeight + deltaY;
@@ -312,12 +324,13 @@
             if (newHeight >= minHeight && newHeight <= maxHeight) {
                 bottomContainer.style.height = newHeight + 'px';
             }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', (e) => {
+            if (!isDragging) return;
             
             e.preventDefault();
-        });
-        
-        document.addEventListener('touchend', () => {
-            if (!isDragging) return;
+            e.stopPropagation();
             
             isDragging = false;
             const currentHeight = bottomContainer.offsetHeight;
@@ -332,6 +345,19 @@
             
             // Re-center map on location after container state changes
             centerMapOnLocation();
+        }, { passive: false });
+        
+        // Additional iOS-specific fixes
+        dragHandle.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+        });
+        
+        dragHandle.addEventListener('gesturechange', (e) => {
+            e.preventDefault();
+        });
+        
+        dragHandle.addEventListener('gestureend', (e) => {
+            e.preventDefault();
         });
     </script>
 </body>
