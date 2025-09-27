@@ -1,5 +1,5 @@
 // Service Worker for Dark Map PWA
-const CACHE_VERSION = '1.0.0';
+const CACHE_VERSION = '1.0.1';
 const CACHE_NAME = `dark-map-cache-v${CACHE_VERSION}`;
 
 // Files to cache
